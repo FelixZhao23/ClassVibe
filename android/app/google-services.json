@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1002148479668",
+    "firebase_url": "https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "classvibe-2025",
+    "storage_bucket": "classvibe-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1002148479668:android:38711abf238aab6a59cde1",
+        "android_client_info": {
+          "package_name": "jp.ac.jec.cm0105.classtest"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1002148479668-54lg04n395ogo9l3petfvuos0iaouucf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "jp.ac.jec.cm0105.classtest",
+            "certificate_hash": "f45e358b129a0754921d2f6f726f0b80847c55bf"
+          }
+        },
+        {
+          "client_id": "1002148479668-hohr4v2ma5ea839on43m4m7k5maqpdjg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8I6n-aW5lFZF7ThJzzJi_au6YO1vuA2g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1002148479668-hohr4v2ma5ea839on43m4m7k5maqpdjg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
