@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8FAFC"
+
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:paddingTop="20dp">
+
+    <TextView
+        android:id="@+id/tv_class_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#334155"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_margin="20dp"
+        android:text="课程名称" />
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:padding="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_class_title">
+
+        <Button android:id="@+id/btn_easy" android:text="よくわかった (+10)" android:layout_margin="8dp"/>
+        <Button android:id="@+id/btn_hard" android:text="難しい" android:layout_margin="8dp"/>
+        <Button android:id="@+id/btn_fast" android:text="ちょっとわからない" android:layout_margin="8dp"/>
+        <Button android:id="@+id/btn_slow" android:text="今何をしている" android:layout_margin="8dp"/>
+    </GridLayout>
+
+    <FrameLayout
+        android:id="@+id/mochi_container"
+        android:layout_width="160dp"
+        android:layout_height="140dp"
+
+        android:clipChildren="false"
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.6">
+
+        <View
+            android:layout_width="100dp"
+            android:layout_height="12dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:background="@drawable/shape_shadow"
+            android:layout_marginBottom="2dp"/>
+
+        <View
+            android:id="@+id/mochi_body"
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:layout_gravity="top"
+            android:background="@drawable/shape_mochi_body"/>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/mochi_face"
+            android:layout_width="match_parent"
+            android:layout_height="130dp">
+
+            <View
+                android:id="@+id/blush_left"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:background="@drawable/shape_blush_soft"
+                android:alpha="0.6"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="52dp"
+                android:layout_marginLeft="14dp" />
+
+            <View
+                android:id="@+id/blush_right"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:background="@drawable/shape_blush_soft"
+                android:alpha="0.6"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="52dp"
+                android:layout_marginRight="14dp" />
+
+            <ImageView
+                android:id="@+id/eye_left"
+                android:layout_width="18dp"
+                android:layout_height="19dp"
+                android:src="@drawable/shape_eye_normal"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="45dp"
+                android:layout_marginLeft="47dp"/>
+            <ImageView
+                android:id="@+id/eye_right"
+                android:layout_width="18dp"
+                android:layout_height="19dp"
+                android:src="@drawable/shape_eye_normal"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="45dp"
+                android:layout_marginRight="47dp"/>
+
+            <ImageView
+                android:id="@+id/mouth"
+                android:layout_width="16dp"
+                android:layout_height="4dp"
+                android:src="@drawable/shape_mouth_neutral"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginTop="75dp" />
+
+            <View
+                android:id="@+id/snot_bubble"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/shape_snot_bubble"
+                android:visibility="invisible"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="50dp"
+                android:layout_marginRight="50dp"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/emote_question"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="?"
+            android:textSize="50sp"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="-20dp"
+            android:layout_marginEnd="-10dp"
+            android:rotation="20"
+            android:visibility="invisible" />
+
+    </FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
