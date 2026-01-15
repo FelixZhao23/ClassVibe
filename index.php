@@ -1,33 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClassVibe - 实时课堂</title>
+    <title>ClassVibe - リアルタイム授業</title>
     
-    <!-- 1. 引入样式库 (Tailwind CSS) -->
+    <!-- 1. ライブラリ読み込み (Tailwind CSS) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. 引入图表库 (Chart.js) -->
+    <!-- 2. ライブラリ読み込み (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- 3. 引入图标库 (FontAwesome) -->
+    <!-- 3. ライブラリ読み込み (FontAwesome) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-    <!-- 4. ✨ 引入二维码生成库 -->
+    <!-- 4. ✨ QRコード生成ライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        body { background-color: #F3F4F6; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #F3F4F6; font-family: 'Noto Sans JP', 'Segoe UI', sans-serif; }
         
-        /* 气泡小三角 */
+        /* 吹き出しの三角形 */
         .bubble::after {
             content: ''; position: absolute; bottom: -10px; left: 50%;
             border-width: 10px 10px 0; border-style: solid;
             border-color: white transparent; transform: translateX(-50%);
         }
 
-        /* === 移植自 iOS 版的 Mochi-chan 动画 === */
+        /* === Mochi-chan アニメーション === */
         @keyframes bounce-fast { 0%, 100% { transform: translateY(0) scale(1.1); } 50% { transform: translateY(-10px) scale(1.1); } }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(-5%); } 50% { transform: translateY(0); } }
         @keyframes shake-gentle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
@@ -53,149 +53,156 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- 1. 顶部导航栏 -->
+    <!-- 1. トップナビゲーション -->
     <header class="bg-white shadow-sm z-20 flex-none h-20">
         <div class="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
             
-            <!-- 左侧：返回 & 标题 & 加入码 -->
+            <!-- 左側：戻る & タイトル & 参加コード -->
             <div class="flex items-center gap-4">
                 <a href="teacherbackground.php" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">正在连接课堂...</h1>
-                    <!-- ✨ 显示 4 位加入码 -->
+                    <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">接続中...</h1>
+                    <!-- ✨ 参加コード表示 -->
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="text-sm text-gray-500">加入码:</span>
+                        <span class="text-sm text-gray-500">参加コード:</span>
                         <span class="text-3xl font-mono font-black text-blue-600 tracking-widest bg-blue-50 px-3 py-0 rounded border border-blue-100" id="join-code">----</span>
                     </div>
                 </div>
             </div>
             
-            <!-- 右侧：二维码 & 工具 -->
+            <!-- 右側：QRコード & ツール -->
             <div class="flex items-center gap-4">
-                <!-- ✨ 小二维码 (点击放大) -->
+                <!-- ✨ ミニQR (クリックで拡大) -->
                 <div class="hidden md:flex flex-col items-center cursor-pointer group" onclick="toggleFullScreenQR()">
                     <div id="qrcode-mini" class="bg-white p-1 border rounded shadow-sm group-hover:shadow-md transition-shadow"></div>
-                    <span class="text-[10px] text-gray-400 mt-1">点击放大</span>
+                    <span class="text-[10px] text-gray-400 mt-1">拡大表示</span>
                 </div>
 
-                <div class="hidden md:flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
-                    <i class="fas fa-user-friends mr-2"></i>
-                    <span id="online-count">1</span> 人在线
+                <!-- ✨ 参加人数表示 (ロジック変更：アクティブな学生数) -->
+                <div class="hidden md:flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-bold border border-blue-100 shadow-sm">
+                    <i class="fas fa-user-check mr-2 text-lg"></i>
+                    <div>
+                        <span class="text-xs font-normal text-blue-500 block leading-none">参加人数</span>
+                        <span class="text-lg leading-none" id="active-student-count">0</span>
+                        <span class="text-xs font-normal">人</span>
+                    </div>
                 </div>
-                <button onclick="resetData()" class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors" title="重置数据">
+
+                <button onclick="resetData()" class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors" title="データをリセット">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- 2. 主内容区 -->
+    <!-- 2. メインコンテンツ -->
     <main class="flex-1 p-6 overflow-y-auto">
         <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             
-            <!-- 左侧 (4/12): 角色与数据 -->
+            <!-- 左カラム (4/12): キャラクター & 数値データ -->
             <div class="lg:col-span-4 flex flex-col gap-6">
                 
-                <!-- 🤖 Mochi-chan 角色卡片 -->
+                <!-- 🤖 Mochi-chan キャラクターカード -->
                 <div id="mascot-card" class="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[350px] transition-colors duration-500">
-                    <!-- 气泡 -->
+                    <!-- 吹き出し -->
                     <div id="mascot-bubble" class="bubble bg-white px-6 py-3 rounded-2xl shadow-md text-gray-700 font-bold mb-8 text-center animate-bounce z-10">
-                        同学们准备好了吗？
+                        準備はいいですか？
                     </div>
                     
-                    <!-- 角色本体 (纯代码绘制) -->
+                    <!-- キャラクター本体 (CSS描画) -->
                     <div class="relative z-10 scale-125 md:scale-150 transform transition-transform">
                         <div id="mochi-body" class="w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 animate-breath">
                             <div class="relative w-full h-full">
-                                <!-- 眼睛 -->
+                                <!-- 目 -->
                                 <div id="mochi-eyes"></div>
-                                <!-- 嘴巴 -->
+                                <!-- 口 -->
                                 <div id="mochi-mouth" class="absolute left-1/2 transform -translate-x-1/2 border-slate-900 top-16 w-4 h-1 bg-slate-900 rounded-full"></div>
-                                <!-- 腮红 -->
+                                <!-- 頬 -->
                                 <div id="mochi-cheeks">
                                     <div class="absolute top-16 left-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div>
                                     <div class="absolute top-16 right-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div>
                                 </div>
                             </div>
                         </div>
-                        <!-- 影子 -->
+                        <!-- 影 -->
                         <div class="w-32 h-4 bg-black/20 rounded-full blur-md mt-4 mx-auto"></div>
                     </div>
 
-                    <!-- 状态文字 -->
+                    <!-- ステータステキスト -->
                     <div class="text-center mt-8">
-                        <span id="mascot-status-text" class="text-gray-400 font-bold text-lg">待机中...</span>
+                        <span id="mascot-status-text" class="text-gray-400 font-bold text-lg">待機中...</span>
                     </div>
                 </div>
 
-                <!-- 📊 4个实时数据块 -->
+                <!-- 📊 4つのリアルタイムデータ (総数表示) -->
                 <div class="grid grid-cols-2 gap-3">
                     <!-- Happy -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">明白了</div>
+                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">わかった！</div>
                         <div class="text-3xl font-bold text-gray-800 mt-1" id="val-happy">0</div>
                     </div>
                     <!-- Amazing -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-pink-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">太棒了</div>
+                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">すごい！</div>
                         <div class="text-3xl font-bold text-gray-800 mt-1" id="val-amazing">0</div>
                     </div>
                     <!-- Confused -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-yellow-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">再讲一遍</div>
+                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">むずかしい</div>
                         <div class="text-3xl font-bold text-gray-800 mt-1" id="val-confused">0</div>
                     </div>
                     <!-- Question -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">有疑问</div>
+                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">質問あり</div>
                         <div class="text-3xl font-bold text-gray-800 mt-1" id="val-question">0</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 右侧 (8/12): 实时图表 -->
+            <!-- 右カラム (8/12): リアルタイムグラフ -->
             <div class="lg:col-span-8 flex flex-col h-full">
                 <div class="bg-white rounded-2xl shadow-lg p-6 flex-1 flex flex-col relative h-full">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700 text-lg">
-                            <i class="fas fa-chart-line text-blue-500 mr-2"></i>课堂理解度趋势
+                            <i class="fas fa-chart-line text-blue-500 mr-2"></i>授業の盛り上がり (リアルタイム熱量)
                         </h3>
                         <div class="flex gap-4 text-xs font-bold">
-                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full"></span> 积极反馈</div>
-                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> 消极反馈</div>
+                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full"></span> ポジティブ反応</div>
+                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> ネガティブ反応</div>
                         </div>
                     </div>
-                    <!-- Chart.js 画布 -->
+                    <!-- Chart.js キャンバス -->
                     <div class="relative flex-1 w-full min-h-[300px]">
                         <canvas id="reactionChart"></canvas>
                     </div>
+                    <p class="text-xs text-gray-400 mt-2 text-right">※ グラフは「累積数」ではなく「現在の勢い」を表示しています</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- ✨ 全屏二维码模态框 -->
+    <!-- ✨ フルスクリーンQRモーダル -->
     <div id="qr-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm" onclick="toggleFullScreenQR()">
         <div class="bg-white p-10 rounded-3xl text-center shadow-2xl transform scale-110" onclick="event.stopPropagation()">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">扫码加入课堂</h2>
-            <p class="text-gray-500 mb-6">或在 App 输入: <span class="text-blue-600 font-mono font-bold text-xl" id="modal-code">----</span></p>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">QRコードで参加</h2>
+            <p class="text-gray-500 mb-6">またはアプリで入力: <span class="text-blue-600 font-mono font-bold text-xl" id="modal-code">----</span></p>
             <div class="flex justify-center bg-white p-2 rounded-xl">
-                <!-- 大二维码容器 -->
+                <!-- 大きいQRコンテナ -->
                 <div id="qrcode-large"></div>
             </div>
-            <p class="text-sm text-gray-400 mt-8 cursor-pointer hover:text-gray-600" onclick="toggleFullScreenQR()">点击任意处关闭</p>
+            <p class="text-sm text-gray-400 mt-8 cursor-pointer hover:text-gray-600" onclick="toggleFullScreenQR()">閉じる</p>
         </div>
     </div>
 
-    <!-- Firebase SDK (兼容版) -->
+    <!-- Firebase SDK (互換版) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <script>
         // ==========================================
-        // 1. Firebase 配置 (请确认这些配置是你的)
+        // 1. Firebase 設定
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyA-xTpcCeCzQpa1sOjgC6EFMPvAvQeX5jg",
@@ -210,17 +217,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. 获取当前课程ID
+        // 2. 現在のコースIDを取得
         const urlParams = new URLSearchParams(window.location.search);
         const CURRENT_COURSE_ID = urlParams.get('courseId');
         
-        // 如果没有ID，跳回课程列表
+        // IDがない場合は一覧へ戻る
         if (!CURRENT_COURSE_ID) {
-            alert("未检测到课程ID，正在返回课程列表...");
+            alert("コースIDが見つかりません。一覧に戻ります。");
             window.location.href = "teacherbackground.php";
         }
 
-        // 3. Chart.js 初始化
+        // 3. Chart.js 初期化
         const ctx = document.getElementById('reactionChart').getContext('2d');
         const reactionChart = new Chart(ctx, {
             type: 'line',
@@ -228,20 +235,20 @@
                 labels: [],
                 datasets: [
                     {
-                        label: 'Positive',
+                        label: 'Positive Flow',
                         data: [],
                         borderColor: '#34D399',
-                        backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                        backgroundColor: 'rgba(52, 211, 153, 0.2)',
                         tension: 0.4,
                         fill: true,
                         pointRadius: 0,
                         borderWidth: 3
                     },
                     {
-                        label: 'Negative',
+                        label: 'Negative Flow',
                         data: [],
                         borderColor: '#FBBF24',
-                        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                        backgroundColor: 'rgba(251, 191, 36, 0.2)',
                         tension: 0.4,
                         fill: true,
                         pointRadius: 0,
@@ -252,69 +259,71 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: false,
+                animation: { duration: 1000, easing: 'linear' }, // 滑らかに動くように調整
                 interaction: { intersect: false, mode: 'index' },
                 scales: {
                     x: { display: false },
-                    y: { beginAtZero: true, grid: { color: '#F3F4F6' } }
-                }
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F3F4F6' },
+                        suggestedMax: 5 // グラフがぺちゃんこにならないように最小の高さを確保
+                    }
+                },
+                plugins: { legend: { display: false } }
             }
         });
 
-        // 4. 监听 Firebase 数据
+        // 4. Firebase データ監視
         const courseRef = db.ref('courses/' + CURRENT_COURSE_ID);
         let currentReactions = { happy: 0, amazing: 0, confused: 0, question: 0 };
+        // 直前の合計値を保存（差分計算用）
+        let lastTotals = { positive: 0, negative: 0 };
+        let isFirstLoad = true;
 
         courseRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // 更新标题
+                // タイトル更新
                 document.getElementById('course-title').innerText = data.title;
                 
-                // ✨ 更新 4 位数加入码 (从数据库读取 simple_code)
+                // ✨ 参加コード更新
                 const code = data.simple_code || "----";
                 document.getElementById('join-code').innerText = code;
                 document.getElementById('modal-code').innerText = code;
                 
-                // ✨ 生成二维码
+                // ✨ QR生成
                 generateQR(code);
 
-                // 更新互动数据
+                // ✨ 参加学生数のカウント (重複排除)
+                // active_students というノードに学生IDが記録されている前提です
+                const activeStudents = data.active_students || {};
+                const studentCount = Object.keys(activeStudents).length;
+                document.getElementById('active-student-count').innerText = studentCount;
+
+                // リアクションデータ更新
                 const reactions = data.reactions || {};
                 updateDashboard(reactions);
             }
         });
 
-        // ✨ 二维码生成函数
+        // ✨ QRコード生成
         let lastQR = "";
         function generateQR(code) {
             if (code === lastQR || code === "----") return;
             lastQR = code;
             
-            // 清空旧的
             document.getElementById("qrcode-mini").innerHTML = "";
             document.getElementById("qrcode-large").innerHTML = "";
             
-            // 生成小图 (60px)
             new QRCode(document.getElementById("qrcode-mini"), {
-                text: code,
-                width: 60,
-                height: 60,
-                colorDark : "#000000",
-                colorLight : "#ffffff"
+                text: code, width: 60, height: 60, colorDark : "#000000", colorLight : "#ffffff"
             });
             
-            // 生成大图 (250px)
             new QRCode(document.getElementById("qrcode-large"), {
-                text: code,
-                width: 250,
-                height: 250,
-                colorDark : "#2563EB", // 蓝色
-                colorLight : "#ffffff"
+                text: code, width: 250, height: 250, colorDark : "#2563EB", colorLight : "#ffffff"
             });
         }
 
-        // 切换全屏二维码
         function toggleFullScreenQR() {
             const modal = document.getElementById('qr-modal');
             if (modal.classList.contains('hidden')) {
@@ -325,7 +334,7 @@
         }
 
         // ==========================================
-        // 5. 界面与角色更新逻辑
+        // 5. 画面更新 & キャラクターロジック
         // ==========================================
         function updateDashboard(reactions) {
             const happy = reactions.happy || 0;
@@ -335,6 +344,7 @@
             
             currentReactions = { happy, amazing, confused, question };
 
+            // 数値は「累積」を表示（これはこれで重要なので）
             document.getElementById('val-happy').innerText = happy;
             document.getElementById('val-amazing').innerText = amazing;
             document.getElementById('val-confused').innerText = confused;
@@ -343,14 +353,14 @@
             updateMascotState(happy, amazing, confused, question);
         }
 
-        // 角色表情配置
+        // マスコットの表情設定
         const mascotConfig = {
-            'super-happy': { cardBg: 'bg-yellow-100', bodyAnim: 'animate-bounce-fast', eyesType: 'stars', mouthClass: 'top-14 w-8 h-8 bg-red-400 border-2 rounded-full', message: '最高！みんな天才！🤩', subMsg: '(太棒了！全班起飞！)' },
-            'happy': { cardBg: 'bg-green-100', bodyAnim: 'animate-bounce-slow', eyesType: 'happy', mouthClass: 'top-14 w-6 h-4 border-b-[4px] rounded-full', message: 'わかった！嬉しいな 😊', subMsg: '(大家都听懂啦)' },
-            'neutral': { cardBg: 'bg-white', bodyAnim: 'animate-breath', eyesType: 'neutral', mouthClass: 'top-16 w-4 h-1 bg-slate-900 rounded-full', message: '勉強中... 真剣です 😐', subMsg: '(认真听讲中...)' },
-            'confused': { cardBg: 'bg-orange-100', bodyAnim: 'animate-shake-gentle', eyesType: 'swirl', mouthClass: 'top-16 w-3 h-3 border-[3px] rounded-full', message: 'あれ？難しいかも... 😵‍💫', subMsg: '(哎呀，有点懵圈...)' },
-            'panic': { cardBg: 'bg-purple-100', bodyAnim: 'animate-shake-hard', eyesType: 'crying', mouthClass: 'top-18 w-10 h-6 bg-slate-800 rounded-xl animate-pulse', message: 'ヘルプ！全然わからない！😱', subMsg: '(救命！完全听不懂了！)' },
-            'sleepy': { cardBg: 'bg-indigo-50', bodyAnim: 'animate-float', eyesType: 'closed', mouthClass: 'hidden', message: 'ぐすー... zZZ 😴', subMsg: '(呼... 睡着了)' }
+            'super-happy': { cardBg: 'bg-yellow-100', bodyAnim: 'animate-bounce-fast', eyesType: 'stars', mouthClass: 'top-14 w-8 h-8 bg-red-400 border-2 rounded-full', message: '最高！みんな天才！🤩', subMsg: '(素晴らしい雰囲気です！)' },
+            'happy': { cardBg: 'bg-green-100', bodyAnim: 'animate-bounce-slow', eyesType: 'happy', mouthClass: 'top-14 w-6 h-4 border-b-[4px] rounded-full', message: 'わかった！嬉しいな 😊', subMsg: '(順調に進んでいます)' },
+            'neutral': { cardBg: 'bg-white', bodyAnim: 'animate-breath', eyesType: 'neutral', mouthClass: 'top-16 w-4 h-1 bg-slate-900 rounded-full', message: '勉強中... 真剣です 😐', subMsg: '(みんな集中しています)' },
+            'confused': { cardBg: 'bg-orange-100', bodyAnim: 'animate-shake-gentle', eyesType: 'swirl', mouthClass: 'top-16 w-3 h-3 border-[3px] rounded-full', message: 'あれ？難しいかも... 😵‍💫', subMsg: '(少し混乱しているようです)' },
+            'panic': { cardBg: 'bg-purple-100', bodyAnim: 'animate-shake-hard', eyesType: 'crying', mouthClass: 'top-18 w-10 h-6 bg-slate-800 rounded-xl animate-pulse', message: 'ヘルプ！全然わからない！😱', subMsg: '(フォローが必要です！)' },
+            'sleepy': { cardBg: 'bg-indigo-50', bodyAnim: 'animate-float', eyesType: 'closed', mouthClass: 'hidden', message: 'ぐすー... zZZ 😴', subMsg: '(反応を待っています...)' }
         };
 
         function updateMascotState(happy, amazing, confused, question) {
@@ -395,27 +405,58 @@
         }
 
         // ==========================================
-        // 6. 图表自动更新
+        // 6. グラフ自動更新 (ロジック変更！)
         // ==========================================
         setInterval(() => {
-            const positive = currentReactions.happy + currentReactions.amazing;
-            const negative = currentReactions.confused + currentReactions.question;
+            const currentPositiveTotal = currentReactions.happy + currentReactions.amazing;
+            const currentNegativeTotal = currentReactions.confused + currentReactions.question;
 
+            // 初回ロード時は差分計算をスキップして現在の値をセットするだけ
+            if (isFirstLoad) {
+                lastTotals.positive = currentPositiveTotal;
+                lastTotals.negative = currentNegativeTotal;
+                isFirstLoad = false;
+                return;
+            }
+
+            // ✨ 差分（＝この瞬間の熱量）を計算
+            // もし誰かが連打しても、その瞬間の「勢い」として表現される
+            let deltaPositive = currentPositiveTotal - lastTotals.positive;
+            let deltaNegative = currentNegativeTotal - lastTotals.negative;
+
+            // マイナスになることはないはずだが念のため0以上にする
+            deltaPositive = Math.max(0, deltaPositive);
+            deltaNegative = Math.max(0, deltaNegative);
+
+            // 前回の値を更新
+            lastTotals.positive = currentPositiveTotal;
+            lastTotals.negative = currentNegativeTotal;
+
+            // グラフにプッシュ
             reactionChart.data.labels.push('');
-            reactionChart.data.datasets[0].data.push(positive);
-            reactionChart.data.datasets[1].data.push(negative);
+            reactionChart.data.datasets[0].data.push(deltaPositive);
+            reactionChart.data.datasets[1].data.push(deltaNegative);
 
+            // データ点を30個に制限（流れるように見せる）
             if (reactionChart.data.labels.length > 30) {
                 reactionChart.data.labels.shift();
                 reactionChart.data.datasets[0].data.shift();
                 reactionChart.data.datasets[1].data.shift();
             }
             reactionChart.update();
-        }, 2000);
+        }, 2000); // 2秒ごとに更新
 
         function resetData() {
-            if(confirm("确定要清空当前课堂的所有反馈数据吗？")) {
+            if(confirm("この授業のデータを全てリセットしますか？\n（復元できません）")) {
                 courseRef.child('reactions').set({ happy: 0, amazing: 0, confused: 0, question: 0 });
+                // 学生リストもリセットしたい場合は下記を追加
+                // courseRef.child('active_students').remove(); 
+                
+                // グラフのリセットも行う
+                reactionChart.data.datasets[0].data = [];
+                reactionChart.data.datasets[1].data = [];
+                lastTotals = { positive: 0, negative: 0 };
+                reactionChart.update();
             }
         }
     </script>
