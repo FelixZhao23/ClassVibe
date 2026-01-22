@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7F5C304D2F16027A00C54B8E /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 7F5C304C2F16027A00C54B8E /* FirebaseDatabase */; };
+		7F69BE042F21E9BC00C351A3 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7F69BE032F21E9BC00C351A3 /* FirebaseAuth */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7F5C304D2F16027A00C54B8E /* FirebaseDatabase in Frameworks */,
+				7F69BE042F21E9BC00C351A3 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = ClassVibe;
 			packageProductDependencies = (
 				7F5C304C2F16027A00C54B8E /* FirebaseDatabase */,
+				7F69BE032F21E9BC00C351A3 /* FirebaseAuth */,
 			);
 			productName = ClassVibe;
 			productReference = 7F5C303A2F15F20200C54B8E /* ClassVibe.app */;
@@ -264,6 +267,7 @@
 				DEVELOPMENT_TEAM = 5L822369X6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "QRコードをスキャンしてクラスに参加するためにカメラを使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -293,6 +297,7 @@
 				DEVELOPMENT_TEAM = 5L822369X6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "QRコードをスキャンしてクラスに参加するためにカメラを使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -350,6 +355,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7F5C304B2F16027A00C54B8E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseDatabase;
+		};
+		7F69BE032F21E9BC00C351A3 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7F5C304B2F16027A00C54B8E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -12,14 +12,19 @@ import FirebaseCore
 struct ClassVibeApp: App {
     
     init() {
-        // 🛡️ 安全启动逻辑
-        // 检查文件是否存在
+        // 1. 尝试从 Bundle 中找到文件路径
         if let filePath = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") {
-            print("✅ 找到配置文件: \(filePath)")
+            print("✅ 成功找到配置文件: \(filePath)")
+            
+            // 2. 尝试初始化
             FirebaseApp.configure()
+            print("✅ Firebase 初始化成功！")
         } else {
-            print("❌ 严重错误: 找不到 GoogleService-Info.plist！请去 Firebase 下载并拖入 Xcode。")
-            // 这里不调用 configure，防止崩溃，但在控制台你会看到错误信息
+            // 3. 如果找不到，打印严重错误
+            print("❌ 严重错误: 找不到 GoogleService-Info.plist！")
+            print("请检查：")
+            print("1. 文件名是否完全正确（没有空格，没有(2)）")
+            print("2. 是否勾选了 Target Membership")
         }
     }
     

@@ -10,7 +10,8 @@ class StudentViewModel: ObservableObject {
     @Published var vibePoints: Int = 100 // 初始送100分
     @Published var inventory: [RewardItem] = [] // 背包
     
-    // --- 课程状态 ---
+    // --- 房间/课程信息 ---
+    @Published var roomCode: String = "" // 输入的4位码
     @Published var courses: [Course] = []
     @Published var currentCourseId: String? = nil
     
@@ -50,9 +51,57 @@ class StudentViewModel: ObservableObject {
         }
     }
     
-    // MARK: - 课程相关逻辑
+    // MARK: - 核心功能：加入房间
     
-    // 监听所有课程列表
+    // 1. 通过 4 位数字码查找真实课程 ID
+    func joinRoomByCode(code: String, completion: @escaping (Bool) -> Void) {
+        if isMock {
+            // 模拟成功
+            self.enterCourse(id: "mock_course_id")
+            completion(true)
+            return
+        }
+        
+        print("正在查找课程码: \(code)")
+        
+        // 去 active_codes 表里查询映射关系
+        dbRef.child("active_codes").child(code).observeSingleEvent(of: .value) { snapshot in
+            if let courseId = snapshot.value as? String {
+                // ✅ 找到了！获取真实的 Course ID
+                print("找到课程 ID: \(courseId)")
+                self.enterCourse(id: courseId)
+                completion(true)
+            } else {
+                // ❌ 没找到
+                print("无效的课程码")
+                completion(false)
+            }
+        }
+    }
+    
+    // 2. 进入特定课程 (建立监听)
+    func enterCourse(id: String) {
+        self.currentCourseId = id
+        self.myTeam = Bool.random() ? .red : .blue // 随机分红蓝队
+        
+        if isMock { return }
+        
+        // A. 监听该课程的反应数据 (为了让手机上的馒头也能动起来)
+        dbRef.child("courses").child(id).child("reactions").observe(.value) { snapshot in
+            if let value = snapshot.value as? [String: Int] {
+                self.classReactions = value
+            } else {
+                self.classReactions = ["happy":0, "amazing":0, "confused":0, "question":0]
+            }
+        }
+        
+        // B. 写入入室记录 (Web端统计人数用)
+        // 路径: courses/{id}/active_students/{userId} = true
+        let userId = getUserId()
+        dbRef.child("courses").child(id).child("active_students").child(userId).setValue(true)
+    }
+    
+    // 3. 监听所有课程列表 (备用功能，用于列表页)
     func listenToCourses() {
         if isMock { return }
         
@@ -65,42 +114,18 @@ class StudentViewModel: ObservableObject {
                     let teacherId = value["teacher_id"] as? String ?? ""
                     let isActive = value["is_active"] as? Bool ?? false
                     
-                    // 仅供参考：如果你的数据结构里有 simple_code，也可以解析出来
                     let course = Course(id: snapshot.key, title: title, teacherName: "ID: \(teacherId.prefix(4))", isActive: isActive)
                     newCourses.append(course)
                 }
             }
-            // 按 ID 倒序排列 (新课在前)
             self.courses = newCourses.sorted(by: { $0.id > $1.id })
         }
-    }
-    
-    // 进入特定课程
-    func enterCourse(id: String) {
-        self.currentCourseId = id
-        self.myTeam = Bool.random() ? .red : .blue // 随机分红蓝队
-        
-        if isMock { return }
-        
-        // 1. 监听该课程的反应数据 (为了让手机上的馒头也能动起来)
-        dbRef.child("courses").child(id).child("reactions").observe(.value) { snapshot in
-            if let value = snapshot.value as? [String: Int] {
-                self.classReactions = value
-            } else {
-                self.classReactions = ["happy":0, "amazing":0, "confused":0, "question":0]
-            }
-        }
-        
-        // 2. 写入入室记录 (统计人数用)
-        // 使用 UserDefaults 存储一个临时的 ID，避免每次重启 App 都算新人
-        let userId = getUserId()
-        dbRef.child("courses").child(id).child("active_students").child(userId).setValue(true)
     }
     
     // MARK: - 互动发送逻辑
     
     func sendReaction(type: String) {
-        // 1. 震动反馈 (Fever模式下更强烈)
+        // 1. 震动反馈
         let generator = UIImpactFeedbackGenerator(style: (gameMode == .fever) ? .heavy : .medium)
         generator.impactOccurred()
         
@@ -116,19 +141,17 @@ class StudentViewModel: ObservableObject {
                 dbRef.child("courses").child(courseId).child("battle").child(teamKey).setValue(ServerValue.increment(1))
             }
         } else if isMock {
-            // 模拟模式下手动增加，为了看 UI 效果
             self.classReactions[type, default: 0] += 1
         }
         
-        // 3. 增加个人积分 (Fever模式加倍)
+        // 3. 增加个人积分
         let pointsEarned = (gameMode == .fever) ? 5 : 1
         vibePoints += pointsEarned
         
-        // 4. 触发 UI 动画 (图标放大)
+        // 4. 触发 UI 动画
         showReactionSuccess = type
         if gameMode == .fever { showFeverEffect.toggle() }
         
-        // 0.5秒后复原图标
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.showReactionSuccess = nil
         }
@@ -140,10 +163,8 @@ class StudentViewModel: ObservableObject {
         let cost = 50
         if vibePoints < cost { return nil }
         
-        // 扣除积分
         vibePoints -= cost
         
-        // 随机抽奖算法
         let roll = Int.random(in: 1...100)
         let item: RewardItem
         
@@ -161,7 +182,6 @@ class StudentViewModel: ObservableObject {
         return item
     }
     
-    // (测试用) 切换游戏模式
     func debugToggleMode() {
         if gameMode == .normal { gameMode = .fever }
         else if gameMode == .fever { gameMode = .battle }
@@ -169,7 +189,6 @@ class StudentViewModel: ObservableObject {
     }
     
     // MARK: - 计算馒头心情 (Computed Property)
-    // 根据全班的数据，动态计算馒头现在的状态
     var currentPetMood: PetMood {
         let happy = classReactions["happy"] ?? 0
         let amazing = classReactions["amazing"] ?? 0
@@ -183,12 +202,9 @@ class StudentViewModel: ObservableObject {
         if total == 0 { return .sleepy }
         if gameMode == .fever { return .superHappy }
         
-        // 如果 Amazing 超过 30%，判定为超开心
         if amazing > 0 && Double(amazing) >= Double(total) * 0.3 { return .superHappy }
         
-        // 如果负面情绪超过正面的一半
         if Double(negative) > Double(positive) * 0.5 {
-            // 如果负面很多且提问多 -> 恐慌
             if negative > 10 && question > confused { return .panic }
             return .confused
         }
