@@ -1,0 +1,210 @@
+import SwiftUI
+import FirebaseDatabase
+import AVFoundation // 用于震动反馈
+
+class StudentViewModel: ObservableObject {
+    // MARK: - Published 属性 (UI 会监听这些属性的变化)
+    
+    // --- 用户信息 ---
+    @Published var studentName: String = ""
+    @Published var vibePoints: Int = 100 // 初始送100分
+    @Published var inventory: [RewardItem] = [] // 背包
+    
+    // --- 课程状态 ---
+    @Published var courses: [Course] = []
+    @Published var currentCourseId: String? = nil
+    
+    // --- 游戏 & 课堂状态 ---
+    @Published var gameMode: GameMode = .normal
+    @Published var myTeam: Team = .none
+    
+    // 全班反应数据 (用于驱动馒头表情)
+    @Published var classReactions: [String: Int] = ["happy":0, "amazing":0, "confused":0, "question":0]
+    
+    // --- UI 反馈 ---
+    @Published var showReactionSuccess: String? = nil
+    @Published var showFeverEffect: Bool = false
+    
+    // MARK: - 内部属性
+    
+    // 模拟模式标记 (用于 Preview 防止崩溃)
+    private var isMock: Bool = false
+    
+    // 懒加载数据库引用
+    private lazy var dbRef: DatabaseReference = {
+        return Database.database().reference()
+    }()
+    
+    // MARK: - 初始化
+    
+    init(isMock: Bool = false) {
+        self.isMock = isMock
+        if isMock {
+            // 模拟一些初始数据供预览使用
+            self.courses = [
+                Course(id: "mock1", title: "iOS 开发基础 (预览)", teacherName: "ID: 8888", isActive: true),
+                Course(id: "mock2", title: "Firebase 实战 (预览)", teacherName: "ID: 9999", isActive: false)
+            ]
+            self.inventory = [RewardItem(name: "预览券", rarity: "SR", icon: "✨")]
+            self.classReactions = ["happy": 10, "amazing": 5, "confused": 2]
+        }
+    }
+    
+    // MARK: - 课程相关逻辑
+    
+    // 监听所有课程列表
+    func listenToCourses() {
+        if isMock { return }
+        
+        dbRef.child("courses").observe(.value) { snapshot in
+            var newCourses: [Course] = []
+            for child in snapshot.children {
+                if let snapshot = child as? DataSnapshot,
+                   let value = snapshot.value as? [String: Any] {
+                    let title = value["title"] as? String ?? "未知课程"
+                    let teacherId = value["teacher_id"] as? String ?? ""
+                    let isActive = value["is_active"] as? Bool ?? false
+                    
+                    // 仅供参考：如果你的数据结构里有 simple_code，也可以解析出来
+                    let course = Course(id: snapshot.key, title: title, teacherName: "ID: \(teacherId.prefix(4))", isActive: isActive)
+                    newCourses.append(course)
+                }
+            }
+            // 按 ID 倒序排列 (新课在前)
+            self.courses = newCourses.sorted(by: { $0.id > $1.id })
+        }
+    }
+    
+    // 进入特定课程
+    func enterCourse(id: String) {
+        self.currentCourseId = id
+        self.myTeam = Bool.random() ? .red : .blue // 随机分红蓝队
+        
+        if isMock { return }
+        
+        // 1. 监听该课程的反应数据 (为了让手机上的馒头也能动起来)
+        dbRef.child("courses").child(id).child("reactions").observe(.value) { snapshot in
+            if let value = snapshot.value as? [String: Int] {
+                self.classReactions = value
+            } else {
+                self.classReactions = ["happy":0, "amazing":0, "confused":0, "question":0]
+            }
+        }
+        
+        // 2. 写入入室记录 (统计人数用)
+        // 使用 UserDefaults 存储一个临时的 ID，避免每次重启 App 都算新人
+        let userId = getUserId()
+        dbRef.child("courses").child(id).child("active_students").child(userId).setValue(true)
+    }
+    
+    // MARK: - 互动发送逻辑
+    
+    func sendReaction(type: String) {
+        // 1. 震动反馈 (Fever模式下更强烈)
+        let generator = UIImpactFeedbackGenerator(style: (gameMode == .fever) ? .heavy : .medium)
+        generator.impactOccurred()
+        
+        // 2. 数据库写入
+        if !isMock, let courseId = currentCourseId {
+            // 路径：courses / {ID} / reactions / {type}
+            let reactionPath = dbRef.child("courses").child(courseId).child("reactions").child(type)
+            reactionPath.setValue(ServerValue.increment(1))
+            
+            // 如果是对战模式，计入队伍分
+            if gameMode == .battle {
+                let teamKey = (myTeam == .red) ? "red_score" : "blue_score"
+                dbRef.child("courses").child(courseId).child("battle").child(teamKey).setValue(ServerValue.increment(1))
+            }
+        } else if isMock {
+            // 模拟模式下手动增加，为了看 UI 效果
+            self.classReactions[type, default: 0] += 1
+        }
+        
+        // 3. 增加个人积分 (Fever模式加倍)
+        let pointsEarned = (gameMode == .fever) ? 5 : 1
+        vibePoints += pointsEarned
+        
+        // 4. 触发 UI 动画 (图标放大)
+        showReactionSuccess = type
+        if gameMode == .fever { showFeverEffect.toggle() }
+        
+        // 0.5秒后复原图标
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.showReactionSuccess = nil
+        }
+    }
+    
+    // MARK: - 扭蛋系统逻辑
+    
+    func spinGacha() -> RewardItem? {
+        let cost = 50
+        if vibePoints < cost { return nil }
+        
+        // 扣除积分
+        vibePoints -= cost
+        
+        // 随机抽奖算法
+        let roll = Int.random(in: 1...100)
+        let item: RewardItem
+        
+        if roll <= 2 {
+            item = RewardItem(name: "免作业券", rarity: "SSR", icon: "👑")
+        } else if roll <= 10 {
+            item = RewardItem(name: "加分券 (+5分)", rarity: "SR", icon: "🔥")
+        } else if roll <= 40 {
+            item = RewardItem(name: "优先提问权", rarity: "R", icon: "🙋")
+        } else {
+            item = RewardItem(name: "电子贴纸", rarity: "N", icon: "🍀")
+        }
+        
+        inventory.append(item)
+        return item
+    }
+    
+    // (测试用) 切换游戏模式
+    func debugToggleMode() {
+        if gameMode == .normal { gameMode = .fever }
+        else if gameMode == .fever { gameMode = .battle }
+        else { gameMode = .normal }
+    }
+    
+    // MARK: - 计算馒头心情 (Computed Property)
+    // 根据全班的数据，动态计算馒头现在的状态
+    var currentPetMood: PetMood {
+        let happy = classReactions["happy"] ?? 0
+        let amazing = classReactions["amazing"] ?? 0
+        let confused = classReactions["confused"] ?? 0
+        let question = classReactions["question"] ?? 0
+        
+        let total = happy + amazing + confused + question
+        let positive = happy + amazing
+        let negative = confused + question
+        
+        if total == 0 { return .sleepy }
+        if gameMode == .fever { return .superHappy }
+        
+        // 如果 Amazing 超过 30%，判定为超开心
+        if amazing > 0 && Double(amazing) >= Double(total) * 0.3 { return .superHappy }
+        
+        // 如果负面情绪超过正面的一半
+        if Double(negative) > Double(positive) * 0.5 {
+            // 如果负面很多且提问多 -> 恐慌
+            if negative > 10 && question > confused { return .panic }
+            return .confused
+        }
+        
+        return .happy
+    }
+    
+    // 辅助：获取设备唯一ID (用于统计人数)
+    private func getUserId() -> String {
+        let key = "classvibe_user_id"
+        if let uuid = UserDefaults.standard.string(forKey: key) {
+            return uuid
+        } else {
+            let uuid = UUID().uuidString
+            UserDefaults.standard.set(uuid, forKey: key)
+            return uuid
+        }
+    }
+}
