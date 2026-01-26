@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseDatabase
+import FirebaseAuth // ⚠️ 核心：用于身份验证
 import AVFoundation // 用于震动反馈
 
 class StudentViewModel: ObservableObject {
@@ -25,6 +26,7 @@ class StudentViewModel: ObservableObject {
     // --- UI 反馈 ---
     @Published var showReactionSuccess: String? = nil
     @Published var showFeverEffect: Bool = false
+    @Published var errorMessage: String? = nil // 错误提示信息
     
     // MARK: - 内部属性
     
@@ -43,65 +45,127 @@ class StudentViewModel: ObservableObject {
         if isMock {
             // 模拟一些初始数据供预览使用
             self.courses = [
-                Course(id: "mock1", title: "iOS 开发基础 (预览)", teacherName: "ID: 8888", isActive: true),
-                Course(id: "mock2", title: "Firebase 实战 (预览)", teacherName: "ID: 9999", isActive: false)
+                Course(id: "mock1", title: "iOS 开发基础 (预览)", teacherName: "ID: 8888", isActive: true)
             ]
             self.inventory = [RewardItem(name: "预览券", rarity: "SR", icon: "✨")]
             self.classReactions = ["happy": 10, "amazing": 5, "confused": 2]
         }
     }
     
-    // MARK: - 核心功能：加入房间
+    // MARK: - 🚀 核心功能：登录并加入房间 (串联逻辑)
     
-    // 1. 通过 4 位数字码查找真实课程 ID
-    func joinRoomByCode(code: String, completion: @escaping (Bool) -> Void) {
+    func loginAndJoinRoom(completion: @escaping (Bool) -> Void) {
+        // 1. 模拟模式直接通过
         if isMock {
-            // 模拟成功
             self.enterCourse(id: "mock_course_id")
             completion(true)
             return
         }
         
-        print("正在查找课程码: \(code)")
+        // 2. 检查输入有效性
+        guard !studentName.isEmpty else {
+            self.errorMessage = "名前を入力してください" // 请输入名字
+            completion(false)
+            return
+        }
+        guard roomCode.count == 4 else {
+            self.errorMessage = "4桁のコードを入力してください" // 请输入4位代码
+            completion(false)
+            return
+        }
+        
+        print("开始登录流程...")
+        
+        // 3. Firebase 匿名登录 (获取真实 UID)
+        // 学生端不需要密码，我们给每台手机发一个唯一 UID 即可
+        Auth.auth().signInAnonymously { [weak self] result, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("登录失败: \(error.localizedDescription)")
+                self.errorMessage = "ログイン失敗: \(error.localizedDescription)"
+                completion(false)
+                return
+            }
+            
+            guard let user = result?.user else { return }
+            print("登录成功! UID: \(user.uid)")
+            
+            // 4. 登录成功后，去查找房间
+            self.findRoomAndEnter(userId: user.uid, completion: completion)
+        }
+    }
+    
+    // 辅助：查找房间并登记
+    private func findRoomAndEnter(userId: String, completion: @escaping (Bool) -> Void) {
+        print("正在查找课程码: \(roomCode)")
         
         // 去 active_codes 表里查询映射关系
-        dbRef.child("active_codes").child(code).observeSingleEvent(of: .value) { snapshot in
+        dbRef.child("active_codes").child(roomCode).observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+            
             if let courseId = snapshot.value as? String {
-                // ✅ 找到了！获取真实的 Course ID
-                print("找到课程 ID: \(courseId)")
+                // ✅ 找到了！
+                print("找到课程 ID: \(courseId), 准备进入...")
+                
+                // 📝 登记入室 (为了让 Web 端人数 +1)
+                // 路径: courses/{id}/active_students/{uid} = {name: "王同学"}
+                let studentInfo = ["name": self.studentName]
+                self.dbRef.child("courses").child(courseId).child("active_students").child(userId).setValue(studentInfo)
+                
+                // 正式进入
                 self.enterCourse(id: courseId)
                 completion(true)
             } else {
                 // ❌ 没找到
                 print("无效的课程码")
+                self.errorMessage = "無効な参加コードです"
                 completion(false)
             }
         }
     }
     
-    // 2. 进入特定课程 (建立监听)
+    // MARK: - 课程逻辑
+    
+    // 进入特定课程 (建立监听)
     func enterCourse(id: String) {
-        self.currentCourseId = id
-        self.myTeam = Bool.random() ? .red : .blue // 随机分红蓝队
+        // 切换到主线程更新 UI
+        DispatchQueue.main.async {
+            self.currentCourseId = id
+            self.myTeam = Bool.random() ? .red : .blue // 随机分红蓝队
+            self.errorMessage = nil
+        }
         
         if isMock { return }
         
         // A. 监听该课程的反应数据 (为了让手机上的馒头也能动起来)
         dbRef.child("courses").child(id).child("reactions").observe(.value) { snapshot in
             if let value = snapshot.value as? [String: Int] {
-                self.classReactions = value
+                DispatchQueue.main.async {
+                    self.classReactions = value
+                }
             } else {
-                self.classReactions = ["happy":0, "amazing":0, "confused":0, "question":0]
+                DispatchQueue.main.async {
+                    self.classReactions = ["happy":0, "amazing":0, "confused":0, "question":0]
+                }
             }
         }
         
-        // B. 写入入室记录 (Web端统计人数用)
-        // 路径: courses/{id}/active_students/{userId} = true
-        let userId = getUserId()
-        dbRef.child("courses").child(id).child("active_students").child(userId).setValue(true)
+        // B. 监听游戏模式 (Fever/Battle)
+        dbRef.child("courses").child(id).child("game_mode").observe(.value) { snapshot in
+            if let modeStr = snapshot.value as? String {
+                DispatchQueue.main.async {
+                    switch modeStr {
+                    case "fever": self.gameMode = .fever
+                    case "battle": self.gameMode = .battle
+                    default: self.gameMode = .normal
+                    }
+                }
+            }
+        }
     }
     
-    // 3. 监听所有课程列表 (备用功能，用于列表页)
+    // 监听所有课程列表 (备用功能，现在主要用直连)
     func listenToCourses() {
         if isMock { return }
         
@@ -210,17 +274,5 @@ class StudentViewModel: ObservableObject {
         }
         
         return .happy
-    }
-    
-    // 辅助：获取设备唯一ID (用于统计人数)
-    private func getUserId() -> String {
-        let key = "classvibe_user_id"
-        if let uuid = UserDefaults.standard.string(forKey: key) {
-            return uuid
-        } else {
-            let uuid = UUID().uuidString
-            UserDefaults.standard.set(uuid, forKey: key)
-            return uuid
-        }
     }
 }
