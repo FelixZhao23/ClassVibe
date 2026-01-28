@@ -97,8 +97,10 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -114,10 +116,13 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 public class loginActivity extends AppCompatActivity {
 
     private EditText etClassCode;
+    private ImageButton btnScanQr;//二维码
     private MaterialButton btnGoogleLogin;
 
     // Google 登录相关
@@ -139,6 +144,10 @@ public class loginActivity extends AppCompatActivity {
         etClassCode = findViewById(R.id.et_class_code);
         btnGoogleLogin = findViewById(R.id.btn_google_login);
 
+        // 1. 绑定控件--二维码
+        etClassCode = findViewById(R.id.et_class_code);
+        btnScanQr = findViewById(R.id.btn_scan_qr); // 绑定新按钮
+
         // 2. 初始化 Firebase 引用
         // 指向 "active_codes" 节点
         codesRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
@@ -152,7 +161,33 @@ public class loginActivity extends AppCompatActivity {
 
         // 4. 按钮点击事件
         btnGoogleLogin.setOnClickListener(v -> handleLoginAttempt());
-    }
+
+        // 5. 设置扫码按钮点击事件
+        btnScanQr.setOnClickListener(v -> {
+            // 启动扫码
+            ScanOptions options = new ScanOptions();
+            options.setPrompt("请扫描老师展示的课程二维码");
+            options.setBeepEnabled(true);
+            options.setOrientationLocked(true);
+            options.setCaptureActivity(CaptureActivityPortrait.class); // 如果你加了竖屏类就用这个
+            barcodeLauncher.launch(options);
+        });
+    }//onCreate end
+
+    // 3. 处理扫码结果
+    private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(new ScanContract(),
+            result -> {
+                if(result.getContents() != null) {
+                    // 扫码成功！
+                    String scannedCode = result.getContents();
+
+                    // 将扫到的码自动填入 EditText
+                    etClassCode.setText(scannedCode);
+
+                    // (可选) 可以在这里直接触发登录逻辑，或者只填入让用户自己点 Google Login
+                    Toast.makeText(this, "已读取课堂代码", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     private void handleLoginAttempt() {
         String inputCode = etClassCode.getText().toString().trim();
