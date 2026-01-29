@@ -5,53 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClassVibe - リアルタイム授業</title>
     
-    <!-- 1. ライブラリ読み込み (Tailwind CSS) -->
+    <!-- 1. ライブラリ読み込み -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2. ライブラリ読み込み (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- 3. ライブラリ読み込み (FontAwesome) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-    <!-- 4. ✨ QRコード生成ライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        body { background-color: #F3F4F6; font-family: 'Noto Sans JP', 'Segoe UI', sans-serif; }
+        body { background-color: #F3F4F6; font-family: 'Noto Sans JP', sans-serif; }
+        .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; border-width: 10px 10px 0; border-style: solid; border-color: white transparent; transform: translateX(-50%); }
         
-        /* 吹き出しの三角形 */
-        .bubble::after {
-            content: ''; position: absolute; bottom: -10px; left: 50%;
-            border-width: 10px 10px 0; border-style: solid;
-            border-color: white transparent; transform: translateX(-50%);
-        }
-
-        /* === Mochi-chan アニメーション === */
+        /* Animations */
         @keyframes bounce-fast { 0%, 100% { transform: translateY(0) scale(1.1); } 50% { transform: translateY(-10px) scale(1.1); } }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(-5%); } 50% { transform: translateY(0); } }
         @keyframes shake-gentle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
         @keyframes shake-hard { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-3px, -2px) rotate(-5deg); } 50% { transform: translate(-1px, 2px) rotate(-5deg); } 100% { transform: translate(1px, -2px) rotate(-5deg); } }
         @keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
-        @keyframes cry { 0% { height: 0; opacity: 0; } 50% { height: 40px; opacity: 1; } 100% { height: 60px; opacity: 0; transform: translateY(20px); } }
-        @keyframes snot { 0% { transform: scale(0.5); } 50% { transform: scale(1.2); } 100% { transform: scale(0.5); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
+        @keyframes damage { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(0.9); filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); } 100% { transform: scale(1); filter: brightness(1); } }
 
         .animate-bounce-fast { animation: bounce-fast 0.5s infinite; }
         .animate-bounce-slow { animation: bounce-slow 2s infinite; }
         .animate-shake-gentle { animation: shake-gentle 1s infinite; }
         .animate-shake-hard { animation: shake-hard 0.5s infinite; }
         .animate-breath { animation: breath 4s infinite ease-in-out; }
-        .animate-blink { animation: blink 3s infinite; }
-        .animate-cry { animation: cry 1.5s infinite; }
-        .animate-snot { animation: snot 3s infinite ease-in-out; }
-        .animate-float { animation: float 3s infinite ease-in-out; }
-        .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+        .animate-damage { animation: damage 0.2s ease-in-out; }
+        
+        /* Game UI */
+        .boss-hp-bar-container { box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+        .shadow-text { text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-screen flex flex-col overflow-hidden relative">
 
     <!-- 1. トップナビゲーション -->
     <header class="bg-white shadow-sm z-20 flex-none h-20">
@@ -63,147 +48,214 @@
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">接続中...</h1>
+                    <div class="flex items-baseline gap-2">
+                        <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">接続中...</h1>
+                        <span class="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded" id="course-time">-- : --</span>
+                    </div>
                     <!-- ✨ 参加コード表示 -->
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="text-sm text-gray-500">参加コード:</span>
-                        <span class="text-3xl font-mono font-black text-blue-600 tracking-widest bg-blue-50 px-3 py-0 rounded border border-blue-100" id="join-code">----</span>
+                        <span class="text-sm text-gray-500">Code:</span>
+                        <span class="text-2xl font-mono font-black text-blue-600 tracking-widest" id="join-code">----</span>
                     </div>
                 </div>
             </div>
             
-            <!-- 右側：QRコード & ツール -->
+            <!-- 右側：ツールバー -->
             <div class="flex items-center gap-4">
-                <!-- ✨ ミニQR (クリックで拡大) -->
+                <!-- QR拡大 -->
                 <div class="hidden md:flex flex-col items-center cursor-pointer group" onclick="toggleFullScreenQR()">
                     <div id="qrcode-mini" class="bg-white p-1 border rounded shadow-sm group-hover:shadow-md transition-shadow"></div>
-                    <span class="text-[10px] text-gray-400 mt-1">拡大表示</span>
+                    <span class="text-[10px] text-gray-400 mt-1">拡大</span>
                 </div>
 
-                <!-- ✨ 参加人数表示 (ロジック変更：アクティブな学生数) -->
-                <div class="hidden md:flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-bold border border-blue-100 shadow-sm">
-                    <i class="fas fa-user-check mr-2 text-lg"></i>
-                    <div>
-                        <span class="text-xs font-normal text-blue-500 block leading-none">参加人数</span>
-                        <span class="text-lg leading-none" id="active-student-count">0</span>
-                        <span class="text-xs font-normal">人</span>
+                <!-- ✨ 参加人数 (active_students) -->
+                <div class="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 shadow-sm">
+                    <i class="fas fa-users mr-2 text-lg"></i>
+                    <div class="text-center leading-none">
+                        <span class="text-xs font-normal text-blue-500 block">参加者数</span>
+                        <span class="text-lg font-bold" id="active-student-count">0</span>
                     </div>
                 </div>
 
-                <button onclick="resetData()" class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors" title="データをリセット">
-                    <i class="fas fa-trash-alt"></i>
+                <!-- 🚫 授業終了ボタン (新機能) -->
+                <button onclick="stopClass()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow font-bold flex items-center gap-2 transition-colors">
+                    <i class="fas fa-stop-circle"></i>
+                    授業終了
                 </button>
             </div>
         </div>
     </header>
 
     <!-- 2. メインコンテンツ -->
-    <main class="flex-1 p-6 overflow-y-auto">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+    <main class="flex-1 p-6 overflow-y-auto bg-gray-50">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- 左カラム (4/12): キャラクター & 数値データ -->
+            <!-- 左カラム (4/12): キャラクター & ゲーム操作 -->
             <div class="lg:col-span-4 flex flex-col gap-6">
                 
-                <!-- 🤖 Mochi-chan キャラクターカード -->
-                <div id="mascot-card" class="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[350px] transition-colors duration-500">
-                    <!-- 吹き出し -->
-                    <div id="mascot-bubble" class="bubble bg-white px-6 py-3 rounded-2xl shadow-md text-gray-700 font-bold mb-8 text-center animate-bounce z-10">
-                        準備はいいですか？
-                    </div>
-                    
-                    <!-- キャラクター本体 (CSS描画) -->
+                <!-- 🤖 Mochi-chan -->
+                <div id="mascot-card" class="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center relative min-h-[300px] transition-colors duration-500">
+                    <div id="mascot-bubble" class="bubble bg-white px-6 py-3 rounded-2xl shadow-md text-gray-700 font-bold mb-8 text-center animate-bounce z-10">準備はいいですか？</div>
                     <div class="relative z-10 scale-125 md:scale-150 transform transition-transform">
                         <div id="mochi-body" class="w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 animate-breath">
                             <div class="relative w-full h-full">
-                                <!-- 目 -->
                                 <div id="mochi-eyes"></div>
-                                <!-- 口 -->
                                 <div id="mochi-mouth" class="absolute left-1/2 transform -translate-x-1/2 border-slate-900 top-16 w-4 h-1 bg-slate-900 rounded-full"></div>
-                                <!-- 頬 -->
-                                <div id="mochi-cheeks">
-                                    <div class="absolute top-16 left-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div>
-                                    <div class="absolute top-16 right-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div>
-                                </div>
+                                <div id="mochi-cheeks"><div class="absolute top-16 left-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div><div class="absolute top-16 right-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div></div>
                             </div>
                         </div>
-                        <!-- 影 -->
                         <div class="w-32 h-4 bg-black/20 rounded-full blur-md mt-4 mx-auto"></div>
                     </div>
-
-                    <!-- ステータステキスト -->
-                    <div class="text-center mt-8">
-                        <span id="mascot-status-text" class="text-gray-400 font-bold text-lg">待機中...</span>
-                    </div>
+                    <div class="text-center mt-8"><span id="mascot-status-text" class="text-gray-400 font-bold text-lg">待機中...</span></div>
                 </div>
 
-                <!-- 📊 4つのリアルタイムデータ (総数表示) -->
-                <div class="grid grid-cols-2 gap-3">
-                    <!-- Happy -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">わかった！</div>
-                        <div class="text-3xl font-bold text-gray-800 mt-1" id="val-happy">0</div>
-                    </div>
-                    <!-- Amazing -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-pink-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">すごい！</div>
-                        <div class="text-3xl font-bold text-gray-800 mt-1" id="val-amazing">0</div>
-                    </div>
-                    <!-- Confused -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-yellow-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">むずかしい</div>
-                        <div class="text-3xl font-bold text-gray-800 mt-1" id="val-confused">0</div>
-                    </div>
-                    <!-- Question -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 hover:scale-105 transition-transform">
-                        <div class="text-gray-400 text-xs font-bold uppercase tracking-wider">質問あり</div>
-                        <div class="text-3xl font-bold text-gray-800 mt-1" id="val-question">0</div>
+                <!-- 🎮 ゲームセンター (タスクシステムの代わり) -->
+                <div class="bg-white p-5 rounded-2xl shadow border-l-4 border-indigo-500">
+                    <h3 class="font-bold text-gray-700 mb-4 flex items-center text-lg">
+                        <i class="fas fa-gamepad mr-2 text-indigo-500"></i> クラスアクティビティ
+                    </h3>
+                    <div class="space-y-3">
+                        <!-- 1. Battle Mode -->
+                        <button onclick="startGame('battle')" class="w-full flex items-center justify-between p-4 bg-gradient-to-r from-red-500 to-blue-500 text-white rounded-xl shadow hover:opacity-90 transition transform hover:-translate-y-1">
+                            <div class="flex items-center">
+                                <span class="text-2xl mr-3">⚔️</span>
+                                <div class="text-left">
+                                    <div class="font-bold">赤青対抗戦</div>
+                                    <div class="text-xs opacity-90">チームで競う！</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-play-circle text-2xl"></i>
+                        </button>
+                        
+                        <!-- 2. Boss Mode -->
+                        <button onclick="startGame('boss')" class="w-full flex items-center justify-between p-4 bg-gray-800 text-white rounded-xl shadow hover:bg-gray-700 transition transform hover:-translate-y-1">
+                            <div class="flex items-center">
+                                <span class="text-2xl mr-3">👾</span>
+                                <div class="text-left">
+                                    <div class="font-bold">BOSS討伐</div>
+                                    <div class="text-xs opacity-70">全員で協力！</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-play-circle text-2xl"></i>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- 右カラム (8/12): リアルタイムグラフ -->
-            <div class="lg:col-span-8 flex flex-col h-full">
-                <div class="bg-white rounded-2xl shadow-lg p-6 flex-1 flex flex-col relative h-full">
+            <!-- 右カラム (8/12): データモニタリング -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                
+                <!-- 📊 6つのリアクションパネル (新規2つ追加) -->
+                <div class="grid grid-cols-3 gap-4">
+                    <!-- Positive -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500"><div class="text-xs text-gray-400 font-bold uppercase">わかった</div><div class="text-3xl font-bold text-gray-800" id="val-happy">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-pink-500"><div class="text-xs text-gray-400 font-bold uppercase">すごい！</div><div class="text-3xl font-bold text-gray-800" id="val-amazing">0</div></div>
+                    
+                    <!-- Negative -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-yellow-500"><div class="text-xs text-gray-400 font-bold uppercase">むずかしい</div><div class="text-3xl font-bold text-gray-800" id="val-confused">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500"><div class="text-xs text-gray-400 font-bold uppercase">質問あり</div><div class="text-3xl font-bold text-gray-800" id="val-question">0</div></div>
+
+                    <!-- Idle/Bored (新規) -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">眠い...</div><div class="text-3xl font-bold text-gray-600" id="val-sleepy">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">暇</div><div class="text-3xl font-bold text-gray-600" id="val-bored">0</div></div>
+                </div>
+
+                <!-- 📈 グラフエリア -->
+                <div class="bg-white rounded-2xl shadow-lg p-6 flex-1 min-h-[350px]">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-gray-700 text-lg">
-                            <i class="fas fa-chart-line text-blue-500 mr-2"></i>授業の盛り上がり (リアルタイム熱量)
-                        </h3>
+                        <h3 class="font-bold text-gray-700 text-lg"><i class="fas fa-chart-line text-blue-500 mr-2"></i>クラスの熱量 (累積)</h3>
                         <div class="flex gap-4 text-xs font-bold">
-                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full"></span> ポジティブ反応</div>
-                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> ネガティブ反応</div>
+                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full"></span> ポジティブ</div>
+                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> ネガティブ</div>
                         </div>
                     </div>
-                    <!-- Chart.js キャンバス -->
-                    <div class="relative flex-1 w-full min-h-[300px]">
+                    <div class="relative w-full h-[300px]">
                         <canvas id="reactionChart"></canvas>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2 text-right">※ グラフは「累積数」ではなく「現在の勢い」を表示しています</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- ✨ フルスクリーンQRモーダル -->
+    <!-- ⚔️ 🎮 ゲームオーバーレイ (全画面表示) -->
+    <div id="game-overlay" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center text-white transition-opacity duration-300">
+        
+        <!-- 閉じるボタン -->
+        <button onclick="stopGame()" class="absolute top-8 right-8 text-white/50 hover:text-white text-xl border border-white/30 px-4 py-2 rounded-full hover:bg-white/10 transition">
+            <i class="fas fa-times mr-2"></i>終了
+        </button>
+
+        <!-- 1. 赤青対抗戦 UI -->
+        <div id="game-battle-ui" class="hidden w-full max-w-5xl text-center px-4">
+            <h2 class="text-5xl font-black mb-12 tracking-wider text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">🔥 赤青対抗戦 🔥</h2>
+            
+            <div class="flex justify-between items-end mb-6 px-4 md:px-20">
+                <div class="text-center">
+                    <div class="text-8xl font-black text-red-500 drop-shadow-md" id="score-red">0</div>
+                    <div class="text-2xl text-red-300 font-bold mt-2">RED TEAM</div>
+                </div>
+                <div class="text-4xl font-black text-white/30 italic mb-4">VS</div>
+                <div class="text-center">
+                    <div class="text-8xl font-black text-blue-500 drop-shadow-md" id="score-blue">0</div>
+                    <div class="text-2xl text-blue-300 font-bold mt-2">BLUE TEAM</div>
+                </div>
+            </div>
+            
+            <!-- 綱引きバー -->
+            <div class="relative w-full h-24 bg-gray-800 rounded-full overflow-hidden border-8 border-gray-700 shadow-inner">
+                <!-- 赤チームの領域 -->
+                <div id="battle-bar-red" class="h-full bg-gradient-to-r from-red-700 via-red-500 to-red-400 transition-all duration-300 ease-out flex items-center justify-end pr-4" style="width: 50%">
+                    <div class="h-full w-2 bg-white/50 blur-sm"></div>
+                </div>
+                <!-- 中心線 -->
+                <div class="absolute top-0 bottom-0 left-1/2 w-1 bg-white/20 -ml-0.5 z-0"></div>
+                <!-- 結び目 -->
+                <div id="battle-knot" class="absolute top-1/2 -translate-y-1/2 transition-all duration-300 ease-out z-10" style="left: 50%">
+                    <div class="text-6xl -ml-8 filter drop-shadow-lg">🪢</div>
+                </div>
+            </div>
+            <p class="mt-12 text-2xl text-white/80 animate-pulse font-bold">スマホを連打して綱を引け！</p>
+        </div>
+
+        <!-- 2. BOSS討伐戦 UI -->
+        <div id="game-boss-ui" class="hidden w-full max-w-3xl text-center px-4">
+            <h2 class="text-5xl font-black mb-6 text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">👾 BOSS BATTLE 👾</h2>
+            
+            <!-- BOSSアバター -->
+            <div class="relative mb-10 h-64 flex items-center justify-center">
+                <div id="boss-avatar" class="text-[180px] transition-transform duration-100 select-none filter drop-shadow-2xl">🦖</div>
+                <!-- ダメージエフェクト用 -->
+                <div id="damage-container" class="absolute inset-0 pointer-events-none"></div>
+            </div>
+
+            <!-- HPバー -->
+            <div class="w-full boss-hp-bar-container h-16 bg-gray-900 rounded-full overflow-hidden border-4 border-gray-700 relative mb-4">
+                <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-green-500 via-green-400 to-green-300 transition-all duration-300" style="width: 100%"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-xl font-black text-white shadow-text tracking-widest z-10">
+                    HP: <span id="boss-hp-text">1000</span> / 1000
+                </div>
+            </div>
+            <p class="text-2xl text-purple-200 font-bold mt-8">全員で攻撃ボタンを連打せよ！</p>
+        </div>
+
+    </div>
+
+    <!-- QR Modal -->
     <div id="qr-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm" onclick="toggleFullScreenQR()">
         <div class="bg-white p-10 rounded-3xl text-center shadow-2xl transform scale-110" onclick="event.stopPropagation()">
             <h2 class="text-2xl font-bold text-gray-800 mb-2">QRコードで参加</h2>
-            <p class="text-gray-500 mb-6">またはアプリで入力: <span class="text-blue-600 font-mono font-bold text-xl" id="modal-code">----</span></p>
-            <div class="flex justify-center bg-white p-2 rounded-xl">
-                <!-- 大きいQRコンテナ -->
-                <div id="qrcode-large"></div>
-            </div>
+            <p class="text-gray-500 mb-6">参加コード: <span class="text-blue-600 font-mono font-bold text-xl" id="modal-code">----</span></p>
+            <div class="flex justify-center bg-white p-2 rounded-xl border border-gray-200"><div id="qrcode-large"></div></div>
             <p class="text-sm text-gray-400 mt-8 cursor-pointer hover:text-gray-600" onclick="toggleFullScreenQR()">閉じる</p>
         </div>
     </div>
 
-    <!-- Firebase SDK (互換版) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <script>
-        // ==========================================
-        // 1. Firebase 設定
-        // ==========================================
+        // 1. Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyA-xTpcCeCzQpa1sOjgC6EFMPvAvQeX5jg",
             authDomain: "classvibe-2025.firebaseapp.com",
@@ -213,252 +265,238 @@
             messagingSenderId: "1002148479668",
             appId: "1:1002148479668:web:58f81221c565df8459cde1"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. 現在のコースIDを取得
         const urlParams = new URLSearchParams(window.location.search);
-        const CURRENT_COURSE_ID = urlParams.get('courseId');
-        
-        // IDがない場合は一覧へ戻る
-        if (!CURRENT_COURSE_ID) {
-            alert("コースIDが見つかりません。一覧に戻ります。");
-            window.location.href = "teacherbackground.php";
-        }
+        const COURSE_ID = urlParams.get('courseId');
+        if (!COURSE_ID) { alert("ID Error"); window.location.href = "teacherbackground.php"; }
 
-        // 3. Chart.js 初期化
+        // Chart Setup
         const ctx = document.getElementById('reactionChart').getContext('2d');
-        const reactionChart = new Chart(ctx, {
+        const chart = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Positive Flow',
-                        data: [],
-                        borderColor: '#34D399',
-                        backgroundColor: 'rgba(52, 211, 153, 0.2)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 0,
-                        borderWidth: 3
-                    },
-                    {
-                        label: 'Negative Flow',
-                        data: [],
-                        borderColor: '#FBBF24',
-                        backgroundColor: 'rgba(251, 191, 36, 0.2)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 0,
-                        borderWidth: 3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 1000, easing: 'linear' }, // 滑らかに動くように調整
-                interaction: { intersect: false, mode: 'index' },
-                scales: {
-                    x: { display: false },
-                    y: { 
-                        beginAtZero: true, 
-                        grid: { color: '#F3F4F6' },
-                        suggestedMax: 5 // グラフがぺちゃんこにならないように最小の高さを確保
-                    }
-                },
-                plugins: { legend: { display: false } }
-            }
+            data: { labels: [], datasets: [
+                { label: 'Positive', data: [], borderColor: '#34D399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.4 },
+                { label: 'Negative', data: [], borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.1)', fill: true, tension: 0.4 }
+            ]},
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
         });
 
-        // 4. Firebase データ監視
-        const courseRef = db.ref('courses/' + CURRENT_COURSE_ID);
-        let currentReactions = { happy: 0, amazing: 0, confused: 0, question: 0 };
-        // 直前の合計値を保存（差分計算用）
-        let lastTotals = { positive: 0, negative: 0 };
-        let isFirstLoad = true;
+        // Data Variables
+        const courseRef = db.ref('courses/' + COURSE_ID);
+        let curReacts = { happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 };
+        let studentCount = 0;
+        let lastBossHp = 1000;
+        const BOSS_MAX_HP = 1000;
 
+        // 2. Firebase Listener
         courseRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // タイトル更新
+                // Info
                 document.getElementById('course-title').innerText = data.title;
-                
-                // ✨ 参加コード更新
+                document.getElementById('course-time').innerText = data.time || "--"; // 显示时限
                 const code = data.simple_code || "----";
                 document.getElementById('join-code').innerText = code;
                 document.getElementById('modal-code').innerText = code;
-                
-                // ✨ QR生成
                 generateQR(code);
-
-                // ✨ 参加学生数のカウント (重複排除)
-                // active_students というノードに学生IDが記録されている前提です
-                const activeStudents = data.active_students || {};
-                const studentCount = Object.keys(activeStudents).length;
+                
+                // Active Students (真实人数)
+                const active = data.active_students || {};
+                studentCount = Object.keys(active).length;
                 document.getElementById('active-student-count').innerText = studentCount;
 
-                // リアクションデータ更新
-                const reactions = data.reactions || {};
-                updateDashboard(reactions);
+                // Reactions
+                const r = data.reactions || {};
+                curReacts = { 
+                    happy: r.happy||0, amazing: r.amazing||0, 
+                    confused: r.confused||0, question: r.question||0,
+                    sleepy: r.sleepy||0, bored: r.bored||0 
+                };
+                updateDashboard();
+                
+                // Game Status
+                const game = data.game || {};
+                updateGameUI(game);
             }
         });
 
-        // ✨ QRコード生成
-        let lastQR = "";
-        function generateQR(code) {
-            if (code === lastQR || code === "----") return;
-            lastQR = code;
-            
-            document.getElementById("qrcode-mini").innerHTML = "";
-            document.getElementById("qrcode-large").innerHTML = "";
-            
-            new QRCode(document.getElementById("qrcode-mini"), {
-                text: code, width: 60, height: 60, colorDark : "#000000", colorLight : "#ffffff"
+        function updateDashboard() {
+            ['happy','amazing','confused','question','sleepy','bored'].forEach(k => {
+                document.getElementById('val-'+k).innerText = curReacts[k];
             });
-            
-            new QRCode(document.getElementById("qrcode-large"), {
-                text: code, width: 250, height: 250, colorDark : "#2563EB", colorLight : "#ffffff"
-            });
+            updateMascotState();
         }
 
-        function toggleFullScreenQR() {
-            const modal = document.getElementById('qr-modal');
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
+        // ==========================================
+        // 🎮 Game Logic
+        // ==========================================
+        function startGame(mode) {
+            const updates = {};
+            updates[`courses/${COURSE_ID}/game/status`] = mode;
+            if (mode === 'battle') {
+                updates[`courses/${COURSE_ID}/game/battle`] = { red: 0, blue: 0 };
+            } else if (mode === 'boss') {
+                updates[`courses/${COURSE_ID}/game/boss`] = { hp: BOSS_MAX_HP, max_hp: BOSS_MAX_HP };
             }
+            db.ref().update(updates);
         }
 
-        // ==========================================
-        // 5. 画面更新 & キャラクターロジック
-        // ==========================================
-        function updateDashboard(reactions) {
-            const happy = reactions.happy || 0;
-            const amazing = reactions.amazing || 0;
-            const confused = reactions.confused || 0;
-            const question = reactions.question || 0;
-            
-            currentReactions = { happy, amazing, confused, question };
-
-            // 数値は「累積」を表示（これはこれで重要なので）
-            document.getElementById('val-happy').innerText = happy;
-            document.getElementById('val-amazing').innerText = amazing;
-            document.getElementById('val-confused').innerText = confused;
-            document.getElementById('val-question').innerText = question;
-
-            updateMascotState(happy, amazing, confused, question);
+        function stopGame() {
+            db.ref(`courses/${COURSE_ID}/game/status`).set('none');
         }
 
-        // マスコットの表情設定
-        const mascotConfig = {
-            'super-happy': { cardBg: 'bg-yellow-100', bodyAnim: 'animate-bounce-fast', eyesType: 'stars', mouthClass: 'top-14 w-8 h-8 bg-red-400 border-2 rounded-full', message: '最高！みんな天才！🤩', subMsg: '(素晴らしい雰囲気です！)' },
-            'happy': { cardBg: 'bg-green-100', bodyAnim: 'animate-bounce-slow', eyesType: 'happy', mouthClass: 'top-14 w-6 h-4 border-b-[4px] rounded-full', message: 'わかった！嬉しいな 😊', subMsg: '(順調に進んでいます)' },
-            'neutral': { cardBg: 'bg-white', bodyAnim: 'animate-breath', eyesType: 'neutral', mouthClass: 'top-16 w-4 h-1 bg-slate-900 rounded-full', message: '勉強中... 真剣です 😐', subMsg: '(みんな集中しています)' },
-            'confused': { cardBg: 'bg-orange-100', bodyAnim: 'animate-shake-gentle', eyesType: 'swirl', mouthClass: 'top-16 w-3 h-3 border-[3px] rounded-full', message: 'あれ？難しいかも... 😵‍💫', subMsg: '(少し混乱しているようです)' },
-            'panic': { cardBg: 'bg-purple-100', bodyAnim: 'animate-shake-hard', eyesType: 'crying', mouthClass: 'top-18 w-10 h-6 bg-slate-800 rounded-xl animate-pulse', message: 'ヘルプ！全然わからない！😱', subMsg: '(フォローが必要です！)' },
-            'sleepy': { cardBg: 'bg-indigo-50', bodyAnim: 'animate-float', eyesType: 'closed', mouthClass: 'hidden', message: 'ぐすー... zZZ 😴', subMsg: '(反応を待っています...)' }
-        };
+        function updateGameUI(game) {
+            const status = game.status || 'none';
+            const overlay = document.getElementById('game-overlay');
+            const battleUI = document.getElementById('game-battle-ui');
+            const bossUI = document.getElementById('game-boss-ui');
 
-        function updateMascotState(happy, amazing, confused, question) {
-            const positive = happy + amazing;
-            const negative = confused + question;
-            const total = positive + negative;
-            
-            let state = 'neutral';
-            
-            if (total === 0) {
-                state = 'sleepy';
-            } else if (amazing > 0 && amazing >= total * 0.3) { 
-                state = 'super-happy';
-            } else if (negative > positive * 0.5) {
-                if (negative > 10 && question > confused) {
-                     state = 'panic';
-                } else {
-                     state = 'confused';
-                }
-            } else {
-                state = 'happy';
-            }
-
-            const cfg = mascotConfig[state];
-
-            document.getElementById('mascot-card').className = `rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[350px] transition-colors duration-500 ${cfg.cardBg}`;
-            document.getElementById('mochi-body').className = `w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 ${cfg.bodyAnim}`;
-            document.getElementById('mochi-eyes').innerHTML = getEyesHTML(cfg.eyesType);
-            document.getElementById('mochi-mouth').className = `absolute left-1/2 transform -translate-x-1/2 border-slate-900 ${cfg.mouthClass}`;
-            document.getElementById('mascot-bubble').innerText = cfg.message;
-            document.getElementById('mascot-status-text').innerText = cfg.subMsg;
-        }
-
-        function getEyesHTML(type) {
-            if (type === 'happy') return '<div class="absolute top-10 left-8 w-6 h-4 border-t-[5px] border-slate-900 rounded-full"></div><div class="absolute top-10 right-8 w-6 h-4 border-t-[5px] border-slate-900 rounded-full"></div>';
-            if (type === 'stars') return '<div class="absolute top-8 left-6 text-yellow-500 text-3xl animate-spin-slow">⭐</div><div class="absolute top-8 right-6 text-yellow-500 text-3xl animate-spin-slow">⭐</div>';
-            if (type === 'neutral') return '<div class="absolute top-10 left-10 w-3 h-4 bg-slate-900 rounded-full animate-blink"></div><div class="absolute top-10 right-10 w-3 h-4 bg-slate-900 rounded-full animate-blink"></div>';
-            if (type === 'swirl') return '<div class="absolute top-8 left-8 text-slate-900 text-2xl animate-spin">😵</div><div class="absolute top-8 right-8 text-slate-900 text-2xl animate-spin">😵</div><div class="absolute -top-6 -right-6 text-4xl font-black text-slate-900 animate-bounce">?</div>';
-            if (type === 'crying') return '<div class="absolute top-10 left-8 w-6 h-2 bg-slate-900 rotate-12"></div><div class="absolute top-10 right-8 w-6 h-2 bg-slate-900 -rotate-12"></div><div class="absolute top-12 left-9 w-4 h-12 bg-blue-300 rounded-full animate-cry"></div><div class="absolute top-12 right-9 w-4 h-12 bg-blue-300 rounded-full animate-cry" style="animation-delay: 0.2s"></div>';
-            if (type === 'closed') return '<div class="absolute top-12 left-8 w-6 h-1 bg-slate-900"></div><div class="absolute top-12 right-8 w-6 h-1 bg-slate-900"></div><div class="absolute top-12 right-12 w-8 h-8 bg-blue-200/50 rounded-full border-2 border-white animate-snot origin-bottom-left"></div>';
-            return '';
-        }
-
-        // ==========================================
-        // 6. グラフ自動更新 (ロジック変更！)
-        // ==========================================
-        setInterval(() => {
-            const currentPositiveTotal = currentReactions.happy + currentReactions.amazing;
-            const currentNegativeTotal = currentReactions.confused + currentReactions.question;
-
-            // 初回ロード時は差分計算をスキップして現在の値をセットするだけ
-            if (isFirstLoad) {
-                lastTotals.positive = currentPositiveTotal;
-                lastTotals.negative = currentNegativeTotal;
-                isFirstLoad = false;
+            if (status === 'none') {
+                overlay.classList.add('hidden');
                 return;
             }
+            overlay.classList.remove('hidden');
 
-            // ✨ 差分（＝この瞬間の熱量）を計算
-            // もし誰かが連打しても、その瞬間の「勢い」として表現される
-            let deltaPositive = currentPositiveTotal - lastTotals.positive;
-            let deltaNegative = currentNegativeTotal - lastTotals.negative;
-
-            // マイナスになることはないはずだが念のため0以上にする
-            deltaPositive = Math.max(0, deltaPositive);
-            deltaNegative = Math.max(0, deltaNegative);
-
-            // 前回の値を更新
-            lastTotals.positive = currentPositiveTotal;
-            lastTotals.negative = currentNegativeTotal;
-
-            // グラフにプッシュ
-            reactionChart.data.labels.push('');
-            reactionChart.data.datasets[0].data.push(deltaPositive);
-            reactionChart.data.datasets[1].data.push(deltaNegative);
-
-            // データ点を30個に制限（流れるように見せる）
-            if (reactionChart.data.labels.length > 30) {
-                reactionChart.data.labels.shift();
-                reactionChart.data.datasets[0].data.shift();
-                reactionChart.data.datasets[1].data.shift();
-            }
-            reactionChart.update();
-        }, 2000); // 2秒ごとに更新
-
-        function resetData() {
-            if(confirm("この授業のデータを全てリセットしますか？\n（復元できません）")) {
-                courseRef.child('reactions').set({ happy: 0, amazing: 0, confused: 0, question: 0 });
-                // 学生リストもリセットしたい場合は下記を追加
-                // courseRef.child('active_students').remove(); 
+            // Battle Mode
+            if (status === 'battle') {
+                battleUI.classList.remove('hidden');
+                bossUI.classList.add('hidden');
                 
-                // グラフのリセットも行う
-                reactionChart.data.datasets[0].data = [];
-                reactionChart.data.datasets[1].data = [];
-                lastTotals = { positive: 0, negative: 0 };
-                reactionChart.update();
+                const scores = game.battle || { red: 0, blue: 0 };
+                document.getElementById('score-red').innerText = scores.red;
+                document.getElementById('score-blue').innerText = scores.blue;
+                
+                const total = (scores.red + scores.blue) || 1;
+                const redPercent = (scores.red / total) * 100;
+                document.getElementById('battle-bar-red').style.width = `${redPercent}%`;
+                document.getElementById('battle-knot').style.left = `${redPercent}%`;
+            }
+
+            // Boss Mode
+            if (status === 'boss') {
+                bossUI.classList.remove('hidden');
+                battleUI.classList.add('hidden');
+                
+                const bossData = game.boss || { hp: BOSS_MAX_HP };
+                const hpPercent = Math.max(0, (bossData.hp / BOSS_MAX_HP) * 100);
+                
+                document.getElementById('boss-hp-bar').style.width = `${hpPercent}%`;
+                document.getElementById('boss-hp-text').innerText = Math.max(0, bossData.hp);
+
+                // Animation & Damage
+                if (bossData.hp < lastBossHp) {
+                    const bossAvatar = document.getElementById('boss-avatar');
+                    bossAvatar.classList.add('animate-damage');
+                    setTimeout(() => bossAvatar.classList.remove('animate-damage'), 200);
+                    showDamageEffect();
+                }
+                lastBossHp = bossData.hp;
+
+                // Victory
+                if (bossData.hp <= 0) {
+                     document.getElementById('boss-avatar').innerText = "💀";
+                     document.getElementById('boss-hp-text').innerText = "VICTORY!";
+                } else {
+                     document.getElementById('boss-avatar').innerText = "🦖";
+                }
             }
         }
+
+        function showDamageEffect() {
+            const container = document.getElementById('damage-container');
+            const el = document.createElement('div');
+            el.innerText = "-10";
+            el.className = "absolute text-red-500 font-bold text-4xl animate-bounce-fast";
+            el.style.left = (50 + (Math.random() * 20 - 10)) + "%";
+            el.style.top = (20 + (Math.random() * 20 - 10)) + "%";
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 500);
+        }
+
+        // ==========================================
+        // 🚫 End Class Logic (Archive & Reset)
+        // ==========================================
+        function stopClass() {
+            if(!confirm("授業を終了しますか？\n現在のデータは履歴に保存され、画面はリセットされます。")) return;
+
+            const timestamp = new Date().toISOString();
+            
+            // 1. 保存到 history
+            const historyData = {
+                end_time: timestamp,
+                final_reactions: curReacts,
+                total_students: studentCount
+            };
+            db.ref(`courses/${COURSE_ID}/history`).push(historyData);
+
+            // 2. 清空数据
+            db.ref(`courses/${COURSE_ID}/reactions`).set({ happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 });
+            db.ref(`courses/${COURSE_ID}/active_students`).remove(); 
+            db.ref(`courses/${COURSE_ID}/game/status`).set('none');
+
+            // 3. 重置本地图表
+            chart.data.datasets.forEach(d => d.data = []);
+            chart.update();
+            alert("授業を終了しました。データは履歴に保存されました。");
+        }
+
+        // QR Code
+        let lastCode = "";
+        function generateQR(code) {
+            if(code === lastCode || code === "----") return; lastCode = code;
+            document.getElementById("qrcode-mini").innerHTML = ""; document.getElementById("qrcode-large").innerHTML = "";
+            new QRCode(document.getElementById("qrcode-mini"), { text: code, width: 50, height: 50 });
+            new QRCode(document.getElementById("qrcode-large"), { text: code, width: 250, height: 250 });
+        }
+        function toggleFullScreenQR() { document.getElementById('qr-modal').classList.toggle('hidden'); }
+
+        // Update Mascot (Include new emotions)
+        function updateMascotState() {
+            const p = curReacts.happy + curReacts.amazing;
+            const n = curReacts.confused + curReacts.question;
+            const o = curReacts.sleepy + curReacts.bored;
+            const t = p + n + o;
+            
+            let state = 'neutral';
+            if (t === 0) state = 'sleepy';
+            else if (o > t * 0.3) state = 'sleepy'; // 如果超30%人无聊/困
+            else if (curReacts.amazing > t * 0.2) state = 'super-happy';
+            else if (n > p * 0.5) state = (n > 10 && curReacts.question > curReacts.confused) ? 'panic' : 'confused';
+            else state = 'happy';
+
+            const config = {
+                'super-happy': { c: 'bg-yellow-100', a: 'animate-bounce-fast', e: '⭐' },
+                'happy': { c: 'bg-green-100', a: 'animate-bounce-slow', e: '😊' },
+                'neutral': { c: 'bg-white', a: 'animate-breath', e: '😐' },
+                'confused': { c: 'bg-orange-100', a: 'animate-shake-gentle', e: '😵' },
+                'panic': { c: 'bg-purple-100', a: 'animate-shake-hard', e: '😱' },
+                'sleepy': { c: 'bg-indigo-50', a: 'animate-float', e: '😴' }
+            }[state];
+
+            document.getElementById('mascot-card').className = `rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[350px] transition-colors duration-500 ${config.c}`;
+            document.getElementById('mochi-body').className = `w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 ${config.a}`;
+            
+            const eyes = document.getElementById('mochi-eyes');
+            if (state === 'happy' || state === 'sleepy') {
+                eyes.innerHTML = '<div class="absolute top-10 left-8 w-6 h-4 border-t-[5px] border-slate-900 rounded-full"></div><div class="absolute top-10 right-8 w-6 h-4 border-t-[5px] border-slate-900 rounded-full"></div>';
+            } else {
+                eyes.innerHTML = `<div class="text-4xl absolute top-8 left-8">${config.e}</div><div class="text-4xl absolute top-8 right-8">${config.e}</div>`;
+            }
+            document.getElementById('mascot-status-text').innerText = state.toUpperCase();
+        }
+
+        // Chart Loop
+        setInterval(() => {
+            const p = curReacts.happy + curReacts.amazing;
+            const n = curReacts.confused + curReacts.question;
+            chart.data.labels.push('');
+            chart.data.datasets[0].data.push(p);
+            chart.data.datasets[1].data.push(n);
+            if (chart.data.labels.length > 30) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); chart.data.datasets[1].data.shift(); }
+            chart.update();
+        }, 2000);
     </script>
 </body>
 </html>
