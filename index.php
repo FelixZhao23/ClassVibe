@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClassVibe - リアルタイム授業</title>
     
-    <!-- 1. ライブラリ読み込み -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -21,7 +20,6 @@
         @keyframes shake-gentle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
         @keyframes shake-hard { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-3px, -2px) rotate(-5deg); } 50% { transform: translate(-1px, 2px) rotate(-5deg); } 100% { transform: translate(1px, -2px) rotate(-5deg); } }
         @keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
         @keyframes damage { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(0.9); filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); } 100% { transform: scale(1); filter: brightness(1); } }
 
         .animate-bounce-fast { animation: bounce-fast 0.5s infinite; }
@@ -38,11 +36,9 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden relative">
 
-    <!-- 1. トップナビゲーション -->
     <header class="bg-white shadow-sm z-20 flex-none h-20">
         <div class="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
             
-            <!-- 左側：戻る & タイトル & 参加コード -->
             <div class="flex items-center gap-4">
                 <a href="teacherbackground.php" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <i class="fas fa-arrow-left text-xl"></i>
@@ -52,7 +48,6 @@
                         <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">接続中...</h1>
                         <span class="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded" id="course-time">-- : --</span>
                     </div>
-                    <!-- ✨ 参加コード表示 -->
                     <div class="flex items-center gap-2 mt-1">
                         <span class="text-sm text-gray-500">Code:</span>
                         <span class="text-2xl font-mono font-black text-blue-600 tracking-widest" id="join-code">----</span>
@@ -60,15 +55,12 @@
                 </div>
             </div>
             
-            <!-- 右側：ツールバー -->
             <div class="flex items-center gap-4">
-                <!-- QR拡大 -->
                 <div class="hidden md:flex flex-col items-center cursor-pointer group" onclick="toggleFullScreenQR()">
                     <div id="qrcode-mini" class="bg-white p-1 border rounded shadow-sm group-hover:shadow-md transition-shadow"></div>
                     <span class="text-[10px] text-gray-400 mt-1">拡大</span>
                 </div>
 
-                <!-- ✨ 参加人数 (active_students) -->
                 <div class="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 shadow-sm">
                     <i class="fas fa-users mr-2 text-lg"></i>
                     <div class="text-center leading-none">
@@ -77,7 +69,6 @@
                     </div>
                 </div>
 
-                <!-- 🚫 授業終了ボタン (新機能) -->
                 <button onclick="stopClass()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow font-bold flex items-center gap-2 transition-colors">
                     <i class="fas fa-stop-circle"></i>
                     授業終了
@@ -86,14 +77,11 @@
         </div>
     </header>
 
-    <!-- 2. メインコンテンツ -->
     <main class="flex-1 p-6 overflow-y-auto bg-gray-50">
         <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- 左カラム (4/12): キャラクター & ゲーム操作 -->
             <div class="lg:col-span-4 flex flex-col gap-6">
                 
-                <!-- 🤖 Mochi-chan -->
                 <div id="mascot-card" class="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center relative min-h-[300px] transition-colors duration-500">
                     <div id="mascot-bubble" class="bubble bg-white px-6 py-3 rounded-2xl shadow-md text-gray-700 font-bold mb-8 text-center animate-bounce z-10">準備はいいですか？</div>
                     <div class="relative z-10 scale-125 md:scale-150 transform transition-transform">
@@ -109,13 +97,11 @@
                     <div class="text-center mt-8"><span id="mascot-status-text" class="text-gray-400 font-bold text-lg">待機中...</span></div>
                 </div>
 
-                <!-- 🎮 ゲームセンター (タスクシステムの代わり) -->
                 <div class="bg-white p-5 rounded-2xl shadow border-l-4 border-indigo-500">
                     <h3 class="font-bold text-gray-700 mb-4 flex items-center text-lg">
                         <i class="fas fa-gamepad mr-2 text-indigo-500"></i> クラスアクティビティ
                     </h3>
                     <div class="space-y-3">
-                        <!-- 1. Battle Mode -->
                         <button onclick="startGame('battle')" class="w-full flex items-center justify-between p-4 bg-gradient-to-r from-red-500 to-blue-500 text-white rounded-xl shadow hover:opacity-90 transition transform hover:-translate-y-1">
                             <div class="flex items-center">
                                 <span class="text-2xl mr-3">⚔️</span>
@@ -127,7 +113,6 @@
                             <i class="fas fa-play-circle text-2xl"></i>
                         </button>
                         
-                        <!-- 2. Boss Mode -->
                         <button onclick="startGame('boss')" class="w-full flex items-center justify-between p-4 bg-gray-800 text-white rounded-xl shadow hover:bg-gray-700 transition transform hover:-translate-y-1">
                             <div class="flex items-center">
                                 <span class="text-2xl mr-3">👾</span>
@@ -142,25 +127,19 @@
                 </div>
             </div>
 
-            <!-- 右カラム (8/12): データモニタリング -->
             <div class="lg:col-span-8 flex flex-col gap-6">
                 
-                <!-- 📊 6つのリアクションパネル (新規2つ追加) -->
                 <div class="grid grid-cols-3 gap-4">
-                    <!-- Positive -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500"><div class="text-xs text-gray-400 font-bold uppercase">わかった</div><div class="text-3xl font-bold text-gray-800" id="val-happy">0</div></div>
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-pink-500"><div class="text-xs text-gray-400 font-bold uppercase">すごい！</div><div class="text-3xl font-bold text-gray-800" id="val-amazing">0</div></div>
                     
-                    <!-- Negative -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-yellow-500"><div class="text-xs text-gray-400 font-bold uppercase">むずかしい</div><div class="text-3xl font-bold text-gray-800" id="val-confused">0</div></div>
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500"><div class="text-xs text-gray-400 font-bold uppercase">質問あり</div><div class="text-3xl font-bold text-gray-800" id="val-question">0</div></div>
 
-                    <!-- Idle/Bored (新規) -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">眠い...</div><div class="text-3xl font-bold text-gray-600" id="val-sleepy">0</div></div>
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">暇</div><div class="text-3xl font-bold text-gray-600" id="val-bored">0</div></div>
                 </div>
 
-                <!-- 📈 グラフエリア -->
                 <div class="bg-white rounded-2xl shadow-lg p-6 flex-1 min-h-[350px]">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700 text-lg"><i class="fas fa-chart-line text-blue-500 mr-2"></i>クラスの熱量 (累積)</h3>
@@ -177,15 +156,12 @@
         </div>
     </main>
 
-    <!-- ⚔️ 🎮 ゲームオーバーレイ (全画面表示) -->
     <div id="game-overlay" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center text-white transition-opacity duration-300">
         
-        <!-- 閉じるボタン -->
         <button onclick="stopGame()" class="absolute top-8 right-8 text-white/50 hover:text-white text-xl border border-white/30 px-4 py-2 rounded-full hover:bg-white/10 transition">
             <i class="fas fa-times mr-2"></i>終了
         </button>
 
-        <!-- 1. 赤青対抗戦 UI -->
         <div id="game-battle-ui" class="hidden w-full max-w-5xl text-center px-4">
             <h2 class="text-5xl font-black mb-12 tracking-wider text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">🔥 赤青対抗戦 🔥</h2>
             
@@ -201,15 +177,11 @@
                 </div>
             </div>
             
-            <!-- 綱引きバー -->
             <div class="relative w-full h-24 bg-gray-800 rounded-full overflow-hidden border-8 border-gray-700 shadow-inner">
-                <!-- 赤チームの領域 -->
                 <div id="battle-bar-red" class="h-full bg-gradient-to-r from-red-700 via-red-500 to-red-400 transition-all duration-300 ease-out flex items-center justify-end pr-4" style="width: 50%">
                     <div class="h-full w-2 bg-white/50 blur-sm"></div>
                 </div>
-                <!-- 中心線 -->
                 <div class="absolute top-0 bottom-0 left-1/2 w-1 bg-white/20 -ml-0.5 z-0"></div>
-                <!-- 結び目 -->
                 <div id="battle-knot" class="absolute top-1/2 -translate-y-1/2 transition-all duration-300 ease-out z-10" style="left: 50%">
                     <div class="text-6xl -ml-8 filter drop-shadow-lg">🪢</div>
                 </div>
@@ -217,18 +189,14 @@
             <p class="mt-12 text-2xl text-white/80 animate-pulse font-bold">スマホを連打して綱を引け！</p>
         </div>
 
-        <!-- 2. BOSS討伐戦 UI -->
         <div id="game-boss-ui" class="hidden w-full max-w-3xl text-center px-4">
             <h2 class="text-5xl font-black mb-6 text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">👾 BOSS BATTLE 👾</h2>
             
-            <!-- BOSSアバター -->
             <div class="relative mb-10 h-64 flex items-center justify-center">
                 <div id="boss-avatar" class="text-[180px] transition-transform duration-100 select-none filter drop-shadow-2xl">🦖</div>
-                <!-- ダメージエフェクト用 -->
                 <div id="damage-container" class="absolute inset-0 pointer-events-none"></div>
             </div>
 
-            <!-- HPバー -->
             <div class="w-full boss-hp-bar-container h-16 bg-gray-900 rounded-full overflow-hidden border-4 border-gray-700 relative mb-4">
                 <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-green-500 via-green-400 to-green-300 transition-all duration-300" style="width: 100%"></div>
                 <div class="absolute inset-0 flex items-center justify-center text-xl font-black text-white shadow-text tracking-widest z-10">
@@ -240,7 +208,6 @@
 
     </div>
 
-    <!-- QR Modal -->
     <div id="qr-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm" onclick="toggleFullScreenQR()">
         <div class="bg-white p-10 rounded-3xl text-center shadow-2xl transform scale-110" onclick="event.stopPropagation()">
             <h2 class="text-2xl font-bold text-gray-800 mb-2">QRコードで参加</h2>
@@ -250,7 +217,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -265,12 +231,13 @@
             messagingSenderId: "1002148479668",
             appId: "1:1002148479668:web:58f81221c565df8459cde1"
         };
-        firebase.initializeApp(firebaseConfig);
+        // 二重初期化防止
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const urlParams = new URLSearchParams(window.location.search);
         const COURSE_ID = urlParams.get('courseId');
-        if (!COURSE_ID) { alert("ID Error"); window.location.href = "teacherbackground.php"; }
+        if (!COURSE_ID) { alert("ID Error"); window.location.href = "index.php"; }
 
         // Chart Setup
         const ctx = document.getElementById('reactionChart').getContext('2d');
@@ -289,20 +256,23 @@
         let studentCount = 0;
         let lastBossHp = 1000;
         const BOSS_MAX_HP = 1000;
+        
+        // ★ 授業開始時間を記録（ページを開いた時間を開始とする）
+        const sessionStartTime = new Date();
 
         // 2. Firebase Listener
         courseRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 // Info
-                document.getElementById('course-title').innerText = data.title;
-                document.getElementById('course-time').innerText = data.time || "--"; // 显示时限
-                const code = data.simple_code || "----";
+                document.getElementById('course-title').innerText = data.name || data.title || "コース名なし";
+                document.getElementById('course-time').innerText = data.time || "-- : --"; 
+                const code = data.code || data.simple_code || "----";
                 document.getElementById('join-code').innerText = code;
                 document.getElementById('modal-code').innerText = code;
                 generateQR(code);
                 
-                // Active Students (真实人数)
+                // Active Students
                 const active = data.active_students || {};
                 studentCount = Object.keys(active).length;
                 document.getElementById('active-student-count').innerText = studentCount;
@@ -324,7 +294,8 @@
 
         function updateDashboard() {
             ['happy','amazing','confused','question','sleepy','bored'].forEach(k => {
-                document.getElementById('val-'+k).innerText = curReacts[k];
+                const el = document.getElementById('val-'+k);
+                if(el) el.innerText = curReacts[k];
             });
             updateMascotState();
         }
@@ -385,7 +356,6 @@
                 document.getElementById('boss-hp-bar').style.width = `${hpPercent}%`;
                 document.getElementById('boss-hp-text').innerText = Math.max(0, bossData.hp);
 
-                // Animation & Damage
                 if (bossData.hp < lastBossHp) {
                     const bossAvatar = document.getElementById('boss-avatar');
                     bossAvatar.classList.add('animate-damage');
@@ -394,7 +364,6 @@
                 }
                 lastBossHp = bossData.hp;
 
-                // Victory
                 if (bossData.hp <= 0) {
                      document.getElementById('boss-avatar').innerText = "💀";
                      document.getElementById('boss-hp-text').innerText = "VICTORY!";
@@ -416,30 +385,53 @@
         }
 
         // ==========================================
-        // 🚫 End Class Logic (Archive & Reset)
+        // 🚫 End Class Logic (修正済: コース一覧へ戻る)
         // ==========================================
         function stopClass() {
-            if(!confirm("授業を終了しますか？\n現在のデータは履歴に保存され、画面はリセットされます。")) return;
+            if(!confirm("授業を終了しますか？\nデータは履歴に保存され、コース一覧に戻ります。")) return;
 
-            const timestamp = new Date().toISOString();
+            const sessionEndTime = new Date();
+            const title = document.getElementById('course-title').innerText;
             
-            // 1. 保存到 history
+            // 履歴用データ作成
             const historyData = {
-                end_time: timestamp,
-                final_reactions: curReacts,
-                total_students: studentCount
+                class_id: COURSE_ID,  
+                topic: title,         
+                start_time: formatTime(sessionStartTime),
+                end_time: formatTime(sessionEndTime),
+                reactions: curReacts,
+                student_count: studentCount
             };
-            db.ref(`courses/${COURSE_ID}/history`).push(historyData);
 
-            // 2. 清空数据
-            db.ref(`courses/${COURSE_ID}/reactions`).set({ happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 });
-            db.ref(`courses/${COURSE_ID}/active_students`).remove(); 
-            db.ref(`courses/${COURSE_ID}/game/status`).set('none');
+            // 1. class_sessions に保存
+            db.ref('class_sessions').push(historyData)
+                .then(() => {
+                    // 2. 現在の授業データをリセット
+                    const resetUpdates = {};
+                    resetUpdates[`courses/${COURSE_ID}/reactions`] = { happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 };
+                    resetUpdates[`courses/${COURSE_ID}/active_students`] = null;
+                    resetUpdates[`courses/${COURSE_ID}/game/status`] = 'none';
+                    
+                    return db.ref().update(resetUpdates);
+                })
+                .then(() => {
+                    alert("お疲れ様でした！\nデータを保存しました。コース一覧へ戻ります。");
+                    // 3. コース一覧ページへ遷移
+                   window.location.href = "teacherbackground.php";
+                })
+                .catch((error) => {
+                    alert("保存エラー: " + error.message);
+                });
+        }
 
-            // 3. 重置本地图表
-            chart.data.datasets.forEach(d => d.data = []);
-            chart.update();
-            alert("授業を終了しました。データは履歴に保存されました。");
+        // 日時フォーマット関数 (YYYY-MM-DD HH:mm形式)
+        function formatTime(date) {
+            const y = date.getFullYear();
+            const m = ('0' + (date.getMonth() + 1)).slice(-2);
+            const d = ('0' + date.getDate()).slice(-2);
+            const h = ('0' + date.getHours()).slice(-2);
+            const min = ('0' + date.getMinutes()).slice(-2);
+            return `${y}-${m}-${d} ${h}:${min}`;
         }
 
         // QR Code
@@ -447,12 +439,13 @@
         function generateQR(code) {
             if(code === lastCode || code === "----") return; lastCode = code;
             document.getElementById("qrcode-mini").innerHTML = ""; document.getElementById("qrcode-large").innerHTML = "";
-            new QRCode(document.getElementById("qrcode-mini"), { text: code, width: 50, height: 50 });
-            new QRCode(document.getElementById("qrcode-large"), { text: code, width: 250, height: 250 });
+            const joinUrl = `${window.location.origin}/student_login.php?code=${code}`; 
+            new QRCode(document.getElementById("qrcode-mini"), { text: joinUrl, width: 50, height: 50 });
+            new QRCode(document.getElementById("qrcode-large"), { text: joinUrl, width: 250, height: 250 });
         }
         function toggleFullScreenQR() { document.getElementById('qr-modal').classList.toggle('hidden'); }
 
-        // Update Mascot (Include new emotions)
+        // Update Mascot
         function updateMascotState() {
             const p = curReacts.happy + curReacts.amazing;
             const n = curReacts.confused + curReacts.question;
@@ -460,11 +453,12 @@
             const t = p + n + o;
             
             let state = 'neutral';
-            if (t === 0) state = 'sleepy';
-            else if (o > t * 0.3) state = 'sleepy'; // 如果超30%人无聊/困
-            else if (curReacts.amazing > t * 0.2) state = 'super-happy';
-            else if (n > p * 0.5) state = (n > 10 && curReacts.question > curReacts.confused) ? 'panic' : 'confused';
-            else state = 'happy';
+            if (t > 0) {
+                if (o > t * 0.3) state = 'sleepy';
+                else if (curReacts.amazing > t * 0.2) state = 'super-happy';
+                else if (n > p * 0.5) state = (n > 10 && curReacts.question > curReacts.confused) ? 'panic' : 'confused';
+                else if (p > n) state = 'happy';
+            }
 
             const config = {
                 'super-happy': { c: 'bg-yellow-100', a: 'animate-bounce-fast', e: '⭐' },
@@ -475,7 +469,7 @@
                 'sleepy': { c: 'bg-indigo-50', a: 'animate-float', e: '😴' }
             }[state];
 
-            document.getElementById('mascot-card').className = `rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[350px] transition-colors duration-500 ${config.c}`;
+            document.getElementById('mascot-card').className = `rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[300px] transition-colors duration-500 ${config.c}`;
             document.getElementById('mochi-body').className = `w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 ${config.a}`;
             
             const eyes = document.getElementById('mochi-eyes');

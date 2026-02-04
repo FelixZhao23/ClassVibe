@@ -6,6 +6,7 @@ import AVFoundation // 用于震动反馈
 class StudentViewModel: ObservableObject {
     // MARK: - Published 属性 (UI 会监听这些属性的变化)
     
+    
     // --- 用户信息 ---
     @Published var studentName: String = ""
     @Published var vibePoints: Int = 100 // 初始送100分
@@ -29,13 +30,26 @@ class StudentViewModel: ObservableObject {
     @Published var errorMessage: String? = nil // 错误提示信息
     
     // MARK: - 内部属性
-    
+
+        
+        // ⚠️ 新增：记录当前课程是否已经参与过互动（用于控制只加一次分）
+        private var hasParticipatedInCurrentSession: Bool = false
+
+        // 模拟模式标记
+        private var isMock1: Bool = false
+
     // 模拟模式标记 (用于 Preview 防止崩溃)
     private var isMock: Bool = false
     
     // 懒加载数据库引用
+//    private lazy var dbRef: DatabaseReference = {
+//        return Database.database().reference()
+//    }()
+    
     private lazy var dbRef: DatabaseReference = {
-        return Database.database().reference()
+        // ⚠️ 这里填你刚才发出来的那个具体的 URL
+        let url = "https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        return Database.database(url: url).reference()
     }()
     
     // MARK: - 初始化
@@ -52,49 +66,79 @@ class StudentViewModel: ObservableObject {
         }
     }
     
-    // MARK: - 🚀 核心功能：登录并加入房间 (串联逻辑)
+    
+    
+    
+    
     
     func loginAndJoinRoom(completion: @escaping (Bool) -> Void) {
-        // 1. 模拟模式直接通过
-        if isMock {
-            self.enterCourse(id: "mock_course_id")
-            completion(true)
-            return
-        }
-        
-        // 2. 检查输入有效性
-        guard !studentName.isEmpty else {
-            self.errorMessage = "名前を入力してください" // 请输入名字
-            completion(false)
-            return
-        }
-        guard roomCode.count == 4 else {
-            self.errorMessage = "4桁のコードを入力してください" // 请输入4位代码
-            completion(false)
-            return
-        }
-        
-        print("开始登录流程...")
-        
-        // 3. Firebase 匿名登录 (获取真实 UID)
-        // 学生端不需要密码，我们给每台手机发一个唯一 UID 即可
-        Auth.auth().signInAnonymously { [weak self] result, error in
-            guard let self = self else { return }
+            if isMock {
+                self.enterCourse(id: "mock_course_id")
+                completion(true)
+                return
+            }
             
-            if let error = error {
-                print("登录失败: \(error.localizedDescription)")
-                self.errorMessage = "ログイン失敗: \(error.localizedDescription)"
+            guard !studentName.isEmpty else {
+                self.errorMessage = "名前を入力してください"
+                completion(false)
+                return
+            }
+            guard roomCode.count == 4 else {
+                self.errorMessage = "4桁のコードを入力してください"
                 completion(false)
                 return
             }
             
-            guard let user = result?.user else { return }
-            print("登录成功! UID: \(user.uid)")
+            print("🔍 1. 开始登录流程... URL: \(dbRef.database.reference().url)")
             
-            // 4. 登录成功后，去查找房间
-            self.findRoomAndEnter(userId: user.uid, completion: completion)
+            Auth.auth().signInAnonymously { [weak self] result, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("❌ 登录失败: \(error.localizedDescription)")
+                    self.errorMessage = "登录失败: \(error.localizedDescription)"
+                    completion(false)
+                    return
+                }
+                
+                print("✅ 2. 匿名登录成功 UID: \(result?.user.uid ?? "无")")
+                
+                // 登录成功后，去查找
+                print("🔍 3. 正在去 active_codes 查找: \(self.roomCode)")
+                
+                self.dbRef.child("active_codes").child(self.roomCode).observeSingleEvent(of: .value) { snapshot in
+                    print("📦 4. 数据库返回 Snapshot: \(snapshot)")
+                    
+                    if let courseId = snapshot.value as? String {
+                        print("✅ 5. 找到课程 ID: \(courseId)")
+                        
+                        // 写入学生信息
+                        let studentInfo = ["name": self.studentName]
+                        self.dbRef.child("courses").child(courseId).child("active_students").child(result!.user.uid).setValue(studentInfo) { err, _ in
+                            if let err = err {
+                                print("❌ 写入名字失败: \(err.localizedDescription)")
+                            } else {
+                                print("✅ 名字写入成功")
+                            }
+                        }
+                        
+                        self.enterCourse(id: courseId)
+                        completion(true)
+                    } else {
+                        print("❌ 没找到对应课程码，Snapshot value 是: \(String(describing: snapshot.value))")
+                        self.errorMessage = "無効な参加コードです"
+                        completion(false)
+                    }
+                } withCancel: { error in
+                    print("❌ 数据库读取权限被拒绝或取消: \(error.localizedDescription)")
+                }
+            }
         }
-    }
+    
+    
+    
+    
+    
     
     // 辅助：查找房间并登记
     private func findRoomAndEnter(userId: String, completion: @escaping (Bool) -> Void) {
@@ -132,6 +176,8 @@ class StudentViewModel: ObservableObject {
         // 切换到主线程更新 UI
         DispatchQueue.main.async {
             self.currentCourseId = id
+            
+            self.hasParticipatedInCurrentSession = false
             self.myTeam = Bool.random() ? .red : .blue // 随机分红蓝队
             self.errorMessage = nil
         }
@@ -194,7 +240,7 @@ class StudentViewModel: ObservableObject {
         generator.impactOccurred()
         
         // 2. 数据库写入
-        if !isMock, let courseId = currentCourseId {
+        if !isMock1, let courseId = currentCourseId {
             // 路径：courses / {ID} / reactions / {type}
             let reactionPath = dbRef.child("courses").child(courseId).child("reactions").child(type)
             reactionPath.setValue(ServerValue.increment(1))
@@ -204,13 +250,21 @@ class StudentViewModel: ObservableObject {
                 let teamKey = (myTeam == .red) ? "red_score" : "blue_score"
                 dbRef.child("courses").child(courseId).child("battle").child(teamKey).setValue(ServerValue.increment(1))
             }
-        } else if isMock {
+        } else if isMock1 {
             self.classReactions[type, default: 0] += 1
         }
         
+        
+        
+        
         // 3. 增加个人积分
-        let pointsEarned = (gameMode == .fever) ? 5 : 1
-        vibePoints += pointsEarned
+        if !hasParticipatedInCurrentSession {
+                    vibePoints += 1
+                    hasParticipatedInCurrentSession = true // 标记为已领取
+                    print("🎉 首次互动，积分 +1！当前积分: \(vibePoints)")
+                } else {
+                    print("👀 本堂课已领过积分，不再增加。")
+                }
         
         // 4. 触发 UI 动画
         showReactionSuccess = type
@@ -251,28 +305,32 @@ class StudentViewModel: ObservableObject {
         else if gameMode == .fever { gameMode = .battle }
         else { gameMode = .normal }
     }
+
     
-    // MARK: - 计算馒头心情 (Computed Property)
-    var currentPetMood: PetMood {
-        let happy = classReactions["happy"] ?? 0
-        let amazing = classReactions["amazing"] ?? 0
-        let confused = classReactions["confused"] ?? 0
-        let question = classReactions["question"] ?? 0
-        
-        let total = happy + amazing + confused + question
-        let positive = happy + amazing
-        let negative = confused + question
-        
-        if total == 0 { return .sleepy }
-        if gameMode == .fever { return .superHappy }
-        
-        if amazing > 0 && Double(amazing) >= Double(total) * 0.3 { return .superHappy }
-        
-        if Double(negative) > Double(positive) * 0.5 {
-            if negative > 10 && question > confused { return .panic }
-            return .confused
+    // 在 StudentViewModel.swift 里找到这个变量
+        var currentPetMood: PetMood {
+            // 获取各种反应的数量
+            let difficult = classReactions["difficult"] ?? 0
+            let interesting = classReactions["interesting"] ?? 0
+            let understood = classReactions["understood"] ?? 0
+            
+            // 🛑 强制逻辑修改：
+            // 只要按了一下 "difficult" (難しい)，马上切换成 panic (大哭)
+            // 这样就能确保你的 GIF 一定会被显示出来！
+            if difficult > 0 {
+                return .panic
+            }
+            
+            // 其他逻辑保持不变
+            if interesting > understood {
+                return .superHappy
+            } else if understood > 0 {
+                return .happy
+            } else {
+                return .sleepy // 默认状态
+            }
         }
-        
-        return .happy
-    }
+    
+    
+    
 }

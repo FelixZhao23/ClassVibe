@@ -278,9 +278,9 @@
             </div>`;
         }
 
-        // ==========================================
+
         // 4. コース作成ロジック (更新)
-        // ==========================================
+       
         async function handleAddCourse(e) {
             e.preventDefault();
             if (!CURRENT_TEACHER_ID) { alert("エラー：ログイン情報が取得できません。"); return; }
@@ -296,6 +296,7 @@
             const periodStart = document.getElementById('input-period-start').value;
             const periodEnd = document.getElementById('input-period-end').value;
             let periodString = periodStart;
+            
             // 開始と終了が違う場合のみ「〜」でつなぐ（例：1限〜2限）
             if (periodStart !== periodEnd) {
                 periodString = `${periodStart}〜${periodEnd}`;
