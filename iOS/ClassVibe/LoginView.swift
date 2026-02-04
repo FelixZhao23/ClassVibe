@@ -17,7 +17,8 @@ struct LoginView: View {
     let googleAccounts = [
         (name: "趙 普湘", email: "24cm0123@jec.ac.jp", icon: "p.circle.fill", color: Color.blue),
         (name: "王 瑛琦", email: "24cm0105@jec.ac.jp", icon: "w.circle.fill", color: Color.orange),
-        (name: "テスト学生", email: "student@gmail.com", icon: "person.circle.fill", color: Color.gray)
+        (name: "测试学生B", email: "testB@example.com", icon: "b.circle.fill", color: Color.green),
+        (name: "テスト学生A", email: "studentA@gmail.com", icon: "a.circle.fill", color: Color.yellow),
     ]
     
     var body: some View {
