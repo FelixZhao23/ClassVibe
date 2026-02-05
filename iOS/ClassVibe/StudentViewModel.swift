@@ -554,11 +554,11 @@ class StudentViewModel: ObservableObject {
         let updates: [String: Any] = [
             "display_name": studentName.isEmpty ? "student" : studentName,
             "team": teamStr,
-            "effective_interactions": ServerValue.increment(weight),
-            "understood_count": ServerValue.increment(understood),
-            "question_count": ServerValue.increment(question),
-            "confused_count": ServerValue.increment(confused),
-            "team_contribution": ServerValue.increment(teamContribution),
+            "effective_interactions": ServerValue.increment(NSNumber(value: weight)),
+            "understood_count": ServerValue.increment(NSNumber(value: understood)),
+            "question_count": ServerValue.increment(NSNumber(value: question)),
+            "confused_count": ServerValue.increment(NSNumber(value: confused)),
+            "team_contribution": ServerValue.increment(NSNumber(value: teamContribution)),
             "last_reaction_at": ServerValue.timestamp()
         ]
 
