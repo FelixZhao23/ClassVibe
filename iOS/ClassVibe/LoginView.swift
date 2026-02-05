@@ -256,14 +256,28 @@ struct LoginView: View {
                 return
             }
 
-            let profileName = user.profile?.name ?? user.profile?.givenName ?? "Google User"
-            let email = user.profile?.email ?? "Google"
+            guard let idToken = user.idToken?.tokenString else {
+                authErrorText = "Googleトークン取得に失敗しました"
+                return
+            }
+            let accessToken = user.accessToken.tokenString
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
 
-            self.studentName = profileName
-            self.loginMethodText = email
+            Auth.auth().signIn(with: credential) { _, firebaseError in
+                if let firebaseError = firebaseError {
+                    authErrorText = "Firebase認証失敗: \(firebaseError.localizedDescription)"
+                    return
+                }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                withAnimation { self.step = 2 }
+                let profileName = user.profile?.name ?? user.profile?.givenName ?? "Google User"
+                let email = user.profile?.email ?? "Google"
+
+                self.studentName = profileName
+                self.loginMethodText = email
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation { self.step = 2 }
+                }
             }
         }
     }

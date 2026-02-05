@@ -8,6 +8,7 @@ import SwiftUI
 
 struct ReactionPadView: View {
     @ObservedObject var viewModel: StudentViewModel
+    @State private var showLeaveAlert = false
     
     var backgroundColor: Color {
         switch viewModel.gameMode {
@@ -28,19 +29,13 @@ struct ReactionPadView: View {
             
             VStack {
                 HStack {
-                    Button(action: { viewModel.currentCourseId = nil }) {
+                    Button(action: { showLeaveAlert = true }) {
                         Image(systemName: "xmark.circle.fill").font(.title2).foregroundColor(.gray)
                     }
                     Spacer()
-                    if viewModel.gameMode == .fever {
-                        Text("🔥 FEVER TIME 🔥").font(.headline).foregroundColor(.red).bold()
-                            .scaleEffect(1.2).animation(.easeInOut(duration: 0.5).repeatForever(), value: true)
-                    } else if viewModel.gameMode == .battle {
-                        Text("⚔️ \(viewModel.myTeam == .red ? "红队" : "蓝队")").font(.headline).bold()
-                            .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
-                    } else {
-                        Text("课堂互动中").foregroundColor(.gray)
-                    }
+                    Text(viewModel.myTeam == .red ? "🟥 RED TEAM" : "🟦 BLUE TEAM")
+                        .font(.headline).bold()
+                        .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
                     Spacer()
                     Button(action: { viewModel.debugToggleMode() }) {
                         Image(systemName: "slider.horizontal.3").font(.title2)
@@ -58,21 +53,12 @@ struct ReactionPadView: View {
                 // Buttons
             // 格式: (Key, Emoji, 显示文字, 背景颜色)
                                 let buttons = [
-                                    // --- 正面反馈 ---
                                     ("understood", "⭕️", "よくわかった", Color.green),
-                                    ("interesting", "🤣", "面白い", Color.pink),
-                                    ("trying", "🔥", "頑張っています", Color.orange),
-                                    
-                                    // --- 疑问/困难 ---
-                                    ("unclear", "🤔", "ちょっと\nわからない", Color.yellow), // 我修正了"かからない"为"わからない"
-                                    ("difficult", "🤯", "難しい", Color(red: 0.8, green: 0.2, blue: 0.2)), // 深红
+                                    ("difficult", "🤯", "難しい", Color(red: 0.8, green: 0.2, blue: 0.2)),
                                     ("lost", "🌀", "ぜんぜん\nわからない", Color.red),
-                                    ("what", "👀", "何をしている", Color.blue),
-                                    
-                                    // --- 吐槽/状态 ---
-                                    ("boring", "😩", "面倒", Color.gray),
-                                    ("slacking", "🎮", "サボリ中", Color.purple),
-                                    ("sleep", "💤", "寝ます", Color(red: 0.4, green: 0.5, blue: 0.6))
+                                    ("unclear", "🤔", "ちょっと\nわからない", Color.orange),
+                                    ("slacking", "🎮", "サボり中", Color.indigo),
+                                    ("boring", "😩", "面倒", Color.gray)
                                 ]
                                 
                                 // 使用 ScrollView 以防屏幕放不下 10 个按钮
@@ -114,5 +100,13 @@ struct ReactionPadView: View {
             }
         }
         .navigationBarHidden(true)
+        .alert("教室を退出しますか？", isPresented: $showLeaveAlert) {
+            Button("キャンセル", role: .cancel) {}
+            Button("退出", role: .destructive) {
+                viewModel.leaveCourse()
+            }
+        } message: {
+            Text("退出すると参加状態が解除されます。")
+        }
     }
 }

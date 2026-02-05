@@ -126,6 +126,14 @@ public class ClassroomActivity extends AppCompatActivity {
         myMemberRef.child("online").setValue(true);
         myMemberRef.child("name").setValue(myUserName); // 把名字也存进去
         myMemberRef.child("online").onDisconnect().removeValue();
+
+        DatabaseReference activeRef = courseRef.child("active_students").child(myUserId);
+        Map<String, Object> studentInfo = new HashMap<>();
+        studentInfo.put("name", myUserName == null ? "student" : myUserName);
+        studentInfo.put("team", myTeam);
+        studentInfo.put("joined_at", ServerValue.TIMESTAMP);
+        activeRef.updateChildren(studentInfo);
+        activeRef.onDisconnect().removeValue();
     }
 
     // === ★★★ 核心修改：按钮点击加积分 ★★★ ===
@@ -153,7 +161,7 @@ public class ClassroomActivity extends AppCompatActivity {
             submitReaction("confused", "confused", () -> scoreIncrement.onClick(v));
         });
 
-        // 3. Focus (问号右上)
+        // 3. ぜんぜんわからない
         findViewById(R.id.btn_fast).setOnClickListener(v -> {
             handleFeedback(0);
 
@@ -168,7 +176,7 @@ public class ClassroomActivity extends AppCompatActivity {
             submitReaction("question", "question", () -> scoreIncrement.onClick(v));
         });
 
-        // 4. Slow (问号左上)
+        // 4. ちょっとわからない
         findViewById(R.id.btn_slow).setOnClickListener(v -> {
             handleFeedback(-5);
 
@@ -180,8 +188,23 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setRotation(-20);
 
             animateLost();
-            // slow/lost 在 RealReaction 中统一并入 confused
-            submitReaction("lost", "confused", () -> scoreIncrement.onClick(v));
+            submitReaction("amazing", "amazing", () -> scoreIncrement.onClick(v));
+        });
+
+        // 5. サボり中
+        findViewById(R.id.btn_slacking).setOnClickListener(v -> {
+            handleFeedback(-5);
+            emoteQuestion.setVisibility(View.INVISIBLE);
+            animateSad();
+            submitReaction("sleepy", "sleepy", () -> scoreIncrement.onClick(v));
+        });
+
+        // 6. 面倒
+        findViewById(R.id.btn_boring).setOnClickListener(v -> {
+            handleFeedback(-5);
+            emoteQuestion.setVisibility(View.INVISIBLE);
+            animateSad();
+            submitReaction("bored", "bored", () -> scoreIncrement.onClick(v));
         });
     }
 
@@ -322,7 +345,10 @@ public class ClassroomActivity extends AppCompatActivity {
                     if (teacher == null) teacher = snapshot.child("teacher_id").getValue(String.class);
                     if (title == null) title = "未命名课程";
                     if (teacher == null) teacher = "未知讲师";
-                    if (tvClassTitle != null) tvClassTitle.setText(title + "\n讲师: " + teacher);
+                    if (tvClassTitle != null) {
+                        String teamLabel = "red".equals(myTeam) ? "🟥 RED TEAM" : "🟦 BLUE TEAM";
+                        tvClassTitle.setText(title + "\n讲师: " + teacher + "  |  " + teamLabel);
+                    }
                 }
             }
             @Override

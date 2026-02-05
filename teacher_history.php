@@ -427,12 +427,12 @@
             container.innerHTML = '';
 
             const emojiConfig = {
-                happy:    { icon: 'fa-smile',     color: 'text-green-500',  bg: 'bg-green-50',  label: 'わかった' },
-                amazing:  { icon: 'fa-star',      color: 'text-pink-500',   bg: 'bg-pink-50',   label: 'すごい！' },
+                happy:    { icon: 'fa-smile',     color: 'text-green-500',  bg: 'bg-green-50',  label: 'よくわかった' },
+                amazing:  { icon: 'fa-star',      color: 'text-pink-500',   bg: 'bg-pink-50',   label: 'ちょっとわからない' },
                 confused: { icon: 'fa-dizzy',     color: 'text-yellow-500', bg: 'bg-yellow-50', label: '難しい' },
-                question: { icon: 'fa-hand-paper',color: 'text-blue-500',   bg: 'bg-blue-50',   label: '質問あり' },
-                sleepy:   { icon: 'fa-bed',       color: 'text-indigo-400', bg: 'bg-indigo-50', label: '眠い...' },
-                bored:    { icon: 'fa-meh-blank', color: 'text-gray-400',   bg: 'bg-gray-100',  label: '暇' }
+                question: { icon: 'fa-hand-paper',color: 'text-blue-500',   bg: 'bg-blue-50',   label: 'ぜんぜんわからない' },
+                sleepy:   { icon: 'fa-bed',       color: 'text-indigo-400', bg: 'bg-indigo-50', label: 'サボり中' },
+                bored:    { icon: 'fa-meh-blank', color: 'text-gray-400',   bg: 'bg-gray-100',  label: '面倒' }
             };
 
             const reactions = session.reactions || {};

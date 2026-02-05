@@ -19,15 +19,21 @@ import com.google.firebase.database.ServerValue; // 导入这个用来做减法
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private int currentPoints = 0; // 默认0分，会从数据库更新
     private TextView tvPoints;
+    private String currentTitle = "はじめの一歩";
 
     // Firebase 相关
     private DatabaseReference myPointsRef;
     private ValueEventListener pointsListener;
+    private DatabaseReference growthRef;
+    private ValueEventListener growthListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +80,25 @@ public class ProfileActivity extends AppCompatActivity {
             };
             // 开启监听
             myPointsRef.addValueEventListener(pointsListener);
+
+            growthRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
+                    .getReference("users")
+                    .child(userId);
+            growthListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    DataSnapshot growth = snapshot.child("growth");
+                    Long expVal = growth.child("exp_total").getValue(Long.class);
+                    currentPoints = expVal != null ? expVal.intValue() : currentPoints;
+                    String title = growth.child("title_current").getValue(String.class);
+                    currentTitle = title != null ? title : "はじめの一歩";
+                    updatePointDisplay();
+                }
+
+                @Override
+                public void onCancelled(DatabaseError error) { }
+            };
+            growthRef.addValueEventListener(growthListener);
         }
 
         // === 底部导航栏逻辑 ===
@@ -88,14 +113,49 @@ public class ProfileActivity extends AppCompatActivity {
             return true;
         });
 
-        // --- 初始化商品列表 ---
-        setupShopItem(R.id.item_ticket, "5分遅刻券", 500, android.R.drawable.ic_lock_idle_alarm);
-        setupShopItem(R.id.item_score, "課題点数 +1", 1000, android.R.drawable.star_on);
-        setupShopItem(R.id.item_snack, "茶菓子", 300, android.R.drawable.ic_menu_gallery);
-        setupShopItem(R.id.item_monster, "モンスター", 2000, android.R.drawable.ic_menu_myplaces);
+        // 关闭旧扭蛋/商店模块，切换为成长页
+        hideLegacyGameUi();
 
-        // --- 初始化扭蛋按钮 ---
-        findViewById(R.id.btn_gacha).setOnClickListener(v -> playGacha());
+        // 点击积分区域可快速查看成长日志
+        tvPoints.setOnClickListener(v -> showGrowthLogDialog(userId));
+    }
+
+    private void hideLegacyGameUi() {
+        int[] ids = new int[] {
+                R.id.item_ticket, R.id.item_score, R.id.item_snack, R.id.item_monster, R.id.btn_gacha
+        };
+        for (int id : ids) {
+            View view = findViewById(id);
+            if (view != null) view.setVisibility(View.GONE);
+        }
+    }
+
+    private void showGrowthLogDialog(String userId) {
+        DatabaseReference logsRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
+                .getReference("users")
+                .child(userId)
+                .child("growth_logs");
+        logsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                List<String> rows = new ArrayList<>();
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String summary = child.child("summary").getValue(String.class);
+                    Long exp = child.child("exp_gain").getValue(Long.class);
+                    rows.add((summary == null ? "成長記録" : summary) + "  (+" + (exp == null ? 0 : exp) + " EXP)");
+                    if (rows.size() >= 10) break;
+                }
+                String msg = rows.isEmpty() ? "まだ成長ログがありません。" : android.text.TextUtils.join("\n\n", rows);
+                new AlertDialog.Builder(ProfileActivity.this)
+                        .setTitle("称号: " + currentTitle)
+                        .setMessage(msg)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) { }
+        });
     }
 
     private void setupShopItem(int includeId, String name, int price, int iconResId) {
@@ -161,7 +221,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void updatePointDisplay() {
         if (tvPoints != null) {
-            tvPoints.setText(currentPoints + " pt");
+            tvPoints.setText(currentPoints + " EXP");
         }
     }
 
@@ -179,6 +239,9 @@ public class ProfileActivity extends AppCompatActivity {
         // 退出页面时移除监听器，这是一个好习惯
         if (myPointsRef != null && pointsListener != null) {
             myPointsRef.removeEventListener(pointsListener);
+        }
+        if (growthRef != null && growthListener != null) {
+            growthRef.removeEventListener(growthListener);
         }
     }
 }

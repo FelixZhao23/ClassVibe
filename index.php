@@ -143,16 +143,16 @@
                 <!-- 📊 6つのリアクションパネル -->
                 <div class="grid grid-cols-3 gap-4">
                     <!-- Positive -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500"><div class="text-xs text-gray-400 font-bold uppercase">わかった</div><div class="text-3xl font-bold text-gray-800" id="val-happy">0</div></div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-pink-500"><div class="text-xs text-gray-400 font-bold uppercase">すごい！</div><div class="text-3xl font-bold text-gray-800" id="val-amazing">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500"><div class="text-xs text-gray-400 font-bold uppercase">よくわかった</div><div class="text-3xl font-bold text-gray-800" id="val-happy">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-pink-500"><div class="text-xs text-gray-400 font-bold uppercase">ちょっとわからない</div><div class="text-3xl font-bold text-gray-800" id="val-amazing">0</div></div>
                     
                     <!-- Negative -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-yellow-500"><div class="text-xs text-gray-400 font-bold uppercase">むずかしい</div><div class="text-3xl font-bold text-gray-800" id="val-confused">0</div></div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500"><div class="text-xs text-gray-400 font-bold uppercase">質問あり</div><div class="text-3xl font-bold text-gray-800" id="val-question">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500"><div class="text-xs text-gray-400 font-bold uppercase">ぜんぜんわからない</div><div class="text-3xl font-bold text-gray-800" id="val-question">0</div></div>
 
                     <!-- Idle/Bored -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">眠い...</div><div class="text-3xl font-bold text-gray-600" id="val-sleepy">0</div></div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">暇</div><div class="text-3xl font-bold text-gray-600" id="val-bored">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">サボり中</div><div class="text-3xl font-bold text-gray-600" id="val-sleepy">0</div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400 bg-gray-50"><div class="text-xs text-gray-500 font-bold uppercase">面倒</div><div class="text-3xl font-bold text-gray-600" id="val-bored">0</div></div>
                 </div>
 
                 <!-- ⚔️ 常時対戦 + ❤️ クラス体力 -->
@@ -248,7 +248,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-smile text-green-500 text-2xl"></i>
-                                <span class="font-bold text-green-700">わかった</span>
+                                <span class="font-bold text-green-700">よくわかった</span>
                             </div>
                             <span class="text-3xl font-black text-green-600" id="rr-val-happy">0</span>
                         </div>
@@ -258,7 +258,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-star text-pink-500 text-2xl"></i>
-                                <span class="font-bold text-pink-700">すごい！</span>
+                                <span class="font-bold text-pink-700">ちょっとわからない</span>
                             </div>
                             <span class="text-3xl font-black text-pink-600" id="rr-val-amazing">0</span>
                         </div>
@@ -278,7 +278,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-hand-paper text-blue-500 text-2xl"></i>
-                                <span class="font-bold text-blue-700">質問あり</span>
+                                <span class="font-bold text-blue-700">ぜんぜんわからない</span>
                             </div>
                             <span class="text-3xl font-black text-blue-600" id="rr-val-question">0</span>
                         </div>
@@ -288,7 +288,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-bed text-indigo-400 text-2xl"></i>
-                                <span class="font-bold text-indigo-600">眠い...</span>
+                                <span class="font-bold text-indigo-600">サボり中</span>
                             </div>
                             <span class="text-3xl font-black text-indigo-500" id="rr-val-sleepy">0</span>
                         </div>
@@ -298,7 +298,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-meh-blank text-gray-400 text-2xl"></i>
-                                <span class="font-bold text-gray-600">暇</span>
+                                <span class="font-bold text-gray-600">面倒</span>
                             </div>
                             <span class="text-3xl font-black text-gray-500" id="rr-val-bored">0</span>
                         </div>
@@ -412,7 +412,10 @@
                 }
                 
                 const active = data.active_students || {};
-                studentCount = Object.keys(active).length;
+                const members = data.members || {};
+                const activeCount = Object.keys(active).length;
+                const membersCount = Object.keys(members).length;
+                studentCount = Math.max(activeCount, membersCount);
                 document.getElementById('active-student-count').innerText = studentCount;
 
                 // 🆕 更新RealReaction参加人数

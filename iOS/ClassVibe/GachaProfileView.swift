@@ -1,110 +1,124 @@
-//
-//  GachaProfileView.swift
-//  ClassVibe
-//
-//  Created by cmStudent on 2026/01/13.
-//
-
 import SwiftUI
+import FirebaseAuth
+import FirebaseDatabase
 
 struct GachaProfileView: View {
     @ObservedObject var viewModel: StudentViewModel
-    @State private var showResultModal = false
-    @State private var lastReward: RewardItem?
-    
+    @State private var titleText: String = "はじめの一歩"
+    @State private var expTotal: Int = 0
+    @State private var dims: [String: Int] = [:]
+    @State private var logs: [(id: String, summary: String, exp: Int)] = []
+    @State private var loading = true
+
+    private let dbRef = Database.database(url: "https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app/").reference()
+
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Profile Header
-                    VStack {
+                VStack(spacing: 16) {
+                    VStack(spacing: 8) {
                         Image(systemName: "person.crop.circle.fill")
-                            .resizable().frame(width: 80, height: 80).foregroundColor(.blue)
-                        Text(viewModel.studentName).font(.title).bold()
-                        HStack {
-                            VStack {
-                                Text("\(viewModel.vibePoints)").font(.title2).bold().foregroundColor(.yellow)
-                                Text("Vibe 积分").font(.caption)
-                            }
-                            Divider().frame(height: 30)
-                            VStack {
-                                Text("\(viewModel.inventory.count)").font(.title2).bold()
-                                Text("收藏品").font(.caption)
-                            }
-                        }
-                        .padding().background(Color.white).cornerRadius(15).shadow(radius: 2)
+                            .resizable().frame(width: 78, height: 78).foregroundColor(.blue)
+                        Text(viewModel.studentName.isEmpty ? "Student" : viewModel.studentName)
+                            .font(.title2).bold()
+                        Text(titleText)
+                            .font(.headline)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(Color.indigo.opacity(0.12))
+                            .cornerRadius(14)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding()
-                    
-                    // Gacha Machine
-                    VStack {
-                        Text("✨ 幸运扭蛋机 ✨").font(.headline).foregroundColor(.purple)
-                        Image(systemName: "cube.box.fill")
-                            .resizable().scaledToFit().frame(height: 120)
-                            .foregroundColor(.pink).padding()
-                        
-                        Button(action: {
-                            if let item = viewModel.spinGacha() {
-                                lastReward = item
-                                showResultModal = true
-                            }
-                        }) {
-                            VStack {
-                                Text("抽奖").bold()
-                                Text("50 积分").font(.caption)
-                            }
-                            .foregroundColor(.white).frame(width: 150, height: 50)
-                            .background(viewModel.vibePoints >= 50 ? Color.pink : Color.gray).cornerRadius(25)
-                        }
-                        .disabled(viewModel.vibePoints < 50)
+                    .background(Color.white)
+                    .cornerRadius(16)
+                    .shadow(radius: 2)
+
+                    HStack {
+                        statCard("EXP", "\(expTotal)", .orange)
+                        statCard("理解", "\(dims["understand", default: 0])", .green)
+                        statCard("質問", "\(dims["question", default: 0])", .blue)
                     }
-                    .padding().background(Color.pink.opacity(0.1)).cornerRadius(20).padding(.horizontal)
-                    
-                    // Inventory
-                    VStack(alignment: .leading) {
-                        Text("我的背包").font(.headline).padding(.leading)
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                            ForEach(viewModel.inventory) { item in
-                                VStack {
-                                    Text(item.icon).font(.largeTitle)
-                                    Text(item.name).font(.caption).bold()
+                    HStack {
+                        statCard("協力", "\(dims["collab", default: 0])", .purple)
+                        statCard("参加", "\(dims["engagement", default: 0])", .pink)
+                        statCard("安定", "\(dims["stability", default: 0])", .teal)
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("成長ログ").font(.headline)
+                        if logs.isEmpty {
+                            Text(loading ? "読み込み中..." : "まだログがありません")
+                                .foregroundColor(.gray)
+                        } else {
+                            ForEach(logs, id: \.id) { log in
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(log.summary).font(.subheadline).lineLimit(2)
+                                        Text(log.id).font(.caption2).foregroundColor(.gray)
+                                    }
+                                    Spacer()
+                                    Text("+\(log.exp) EXP").font(.caption).bold().foregroundColor(.green)
                                 }
-                                .padding().background(Color.white).cornerRadius(10).shadow(radius: 2)
+                                .padding(10)
+                                .background(Color.white)
+                                .cornerRadius(10)
                             }
                         }
-                        .padding()
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color.gray.opacity(0.08))
+                    .cornerRadius(16)
                 }
+                .padding()
             }
-            .navigationTitle("个人中心")
-            .sheet(isPresented: $showResultModal) {
-                if let item = lastReward {
-                    RewardResultView(item: item)
-                }
-            }
+            .navigationTitle("成長プロフィール")
+            .onAppear(perform: loadGrowth)
         }
     }
-}
 
-struct RewardResultView: View {
-    let item: RewardItem
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.8).ignoresSafeArea()
-            VStack(spacing: 20) {
-                Text("🎉 恭喜获得 🎉").font(.title).foregroundColor(.white).bold()
-                VStack {
-                    Text(item.icon).font(.system(size: 100))
-                    Text(item.name).font(.title2).bold()
-                    Text(item.rarity).font(.headline).foregroundColor(.purple)
-                }
-                .padding(40).background(Color.white).cornerRadius(20).shadow(radius: 20)
-                
-                Button("收下") { presentationMode.wrappedValue.dismiss() }
-                    .padding().background(Color.yellow).foregroundColor(.black).cornerRadius(10)
+    private func statCard(_ label: String, _ value: String, _ color: Color) -> some View {
+        VStack {
+            Text(label).font(.caption).foregroundColor(.gray)
+            Text(value).font(.headline).bold().foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(radius: 1)
+    }
+
+    private func loadGrowth() {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            loading = false
+            return
+        }
+        loading = true
+
+        dbRef.child("users").child(uid).child("growth").observeSingleEvent(of: .value) { snap in
+            let data = snap.value as? [String: Any] ?? [:]
+            titleText = data["title_current"] as? String ?? "はじめの一歩"
+            expTotal = data["exp_total"] as? Int ?? Int((data["exp_total"] as? Double) ?? 0)
+            var parsedDims: [String: Int] = [:]
+            let rawDims = data["dims"] as? [String: Any] ?? [:]
+            rawDims.forEach { key, val in
+                parsedDims[key] = val as? Int ?? Int((val as? Double) ?? 0)
             }
+            dims = parsedDims
+        }
+
+        dbRef.child("users").child(uid).child("growth_logs").observeSingleEvent(of: .value) { snap in
+            var temp: [(id: String, summary: String, exp: Int)] = []
+            let logsData = snap.value as? [String: Any] ?? [:]
+            for (key, value) in logsData {
+                let row = value as? [String: Any] ?? [:]
+                let summary = row["summary"] as? String ?? "成長記録"
+                let exp = row["exp_gain"] as? Int ?? Int((row["exp_gain"] as? Double) ?? 0)
+                temp.append((id: key, summary: summary, exp: exp))
+            }
+            logs = temp.sorted(by: { $0.id > $1.id }).prefix(20).map { $0 }
+            loading = false
         }
     }
 }

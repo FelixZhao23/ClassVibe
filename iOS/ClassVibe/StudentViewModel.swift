@@ -372,6 +372,7 @@ class StudentViewModel: ObservableObject {
     
     // ⚠️ 记录当前课程是否已领过积分 (控制一堂课只加1分)
     private var hasParticipatedInCurrentSession: Bool = false
+    private var currentUserId: String? = nil
     private var lastReactionAt: Date? = nil
     private var lastReactionType: String? = nil
     private var sameReactionChain: Int = 0
@@ -397,17 +398,17 @@ class StudentViewModel: ObservableObject {
 
         var dbKey = ""
         switch type {
-        case "interesting", "trying":
-            dbKey = "amazing"
-        case "difficult", "lost", "panic", "what":
-            dbKey = "confused"
-        case "unclear":
-            dbKey = "question"
         case "understood":
             dbKey = "happy"
-        case "sleep":
+        case "difficult", "panic":
+            dbKey = "confused"
+        case "lost":
+            dbKey = "question"
+        case "unclear":
+            dbKey = "amazing"
+        case "slacking":
             dbKey = "sleepy"
-        case "boring", "slacking":
+        case "boring":
             dbKey = "bored"
         default:
             dbKey = "happy"
@@ -587,16 +588,13 @@ class StudentViewModel: ObservableObject {
     private func updateMoodLocally(type: String) {
         // 根据按钮类型切换心情
         switch type {
-        case "interesting", "trying":
+        case "understood":
             self.currentPetMood = .superHappy // 星星眼
             
-        case "difficult", "lost", "panic":
+        case "difficult", "lost", "panic", "unclear":
             self.currentPetMood = .panic // 😭 触发 GIF
             
-        case "unclear":
-            self.currentPetMood = .confused // 晕
-            
-        case "sleep", "boring":
+        case "slacking", "boring":
             self.currentPetMood = .sleepy // 睡觉
             
         default:
@@ -620,7 +618,7 @@ class StudentViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.currentCourseId = id
             self.hasParticipatedInCurrentSession = false // 重置积分领取状态
-            self.myTeam = Bool.random() ? .red : .blue
+            self.myTeam = self.teamFromUid(self.currentUserId)
             self.errorMessage = nil
             self.currentPetMood = .happy // 进教室时默认开心
         }
@@ -648,23 +646,33 @@ class StudentViewModel: ObservableObject {
     
     // 登录逻辑 (保持不变)
     func loginAndJoinRoom(completion: @escaping (Bool) -> Void) {
-        if isMock { completion(true); return }
+        if isMock {
+            self.currentUserId = "mock-user"
+            self.myTeam = teamFromUid(self.currentUserId)
+            completion(true)
+            return
+        }
         guard !studentName.isEmpty, roomCode.count == 4 else {
             errorMessage = "入力エラー"
             completion(false)
             return
         }
-        
-        Auth.auth().signInAnonymously { [weak self] result, error in
-            guard let self = self, let user = result?.user else {
-                completion(false)
-                return
-            }
-            
+
+        let afterAuth: (String) -> Void = { uid in
+            self.currentUserId = uid
+            self.myTeam = self.teamFromUid(uid)
+
             self.dbRef.child("active_codes").child(self.roomCode).observeSingleEvent(of: .value) { snapshot in
                 if let courseId = snapshot.value as? String {
-                    let studentInfo = ["name": self.studentName]
-                    self.dbRef.child("courses").child(courseId).child("active_students").child(user.uid).setValue(studentInfo)
+                    let teamStr = (self.myTeam == .red) ? "red" : "blue"
+                    let studentInfo: [String: Any] = [
+                        "name": self.studentName,
+                        "team": teamStr,
+                        "joined_at": ServerValue.timestamp()
+                    ]
+                    let activeRef = self.dbRef.child("courses").child(courseId).child("active_students").child(uid)
+                    activeRef.setValue(studentInfo)
+                    activeRef.onDisconnectRemoveValue()
                     self.enterCourse(id: courseId)
                     completion(true)
                 } else {
@@ -673,6 +681,35 @@ class StudentViewModel: ObservableObject {
                 }
             }
         }
+
+        if let user = Auth.auth().currentUser {
+            afterAuth(user.uid)
+            return
+        }
+
+        Auth.auth().signInAnonymously { result, error in
+            if let user = result?.user {
+                afterAuth(user.uid)
+            } else {
+                self.errorMessage = "ログイン失敗"
+                completion(false)
+            }
+        }
+    }
+
+    func leaveCourse() {
+        guard let courseId = currentCourseId, let uid = currentUserId else {
+            currentCourseId = nil
+            return
+        }
+        dbRef.child("courses").child(courseId).child("active_students").child(uid).removeValue()
+        currentCourseId = nil
+    }
+
+    private func teamFromUid(_ uid: String?) -> Team {
+        guard let uid = uid else { return .none }
+        let sum = uid.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return (sum % 2 == 0) ? .red : .blue
     }
     
     // 扭蛋逻辑 (保持不变)
