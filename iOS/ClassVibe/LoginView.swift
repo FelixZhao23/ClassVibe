@@ -1,6 +1,9 @@
 import SwiftUI
 import AuthenticationServices // 🍎 Apple 登录
 import AVFoundation // 📷 相机
+import UIKit
+import FirebaseAuth
+import GoogleSignIn
 
 struct LoginView: View {
     @Binding var studentName: String
@@ -10,16 +13,8 @@ struct LoginView: View {
     // --- 内部状态 ---
     @State private var step = 1 // 1: 选择登录方式, 2: 输入课程码
     @State private var isShowingScanner = false
-    @State private var showAccountPicker = false // 控制 Google 弹窗
     @State private var loginMethodText = "" // 显示当前是用什么登录的
-    
-    // 模拟 Google 账号数据 (你可以修改这里的名字)
-    let googleAccounts = [
-        (name: "趙 普湘", email: "24cm0123@jec.ac.jp", icon: "p.circle.fill", color: Color.blue),
-        (name: "王 瑛琦", email: "24cm0105@jec.ac.jp", icon: "w.circle.fill", color: Color.orange),
-        (name: "测试学生B", email: "testB@example.com", icon: "b.circle.fill", color: Color.green),
-        (name: "テスト学生A", email: "studentA@gmail.com", icon: "a.circle.fill", color: Color.yellow),
-    ]
+    @State private var authErrorText = ""
     
     var body: some View {
         ZStack {
@@ -63,14 +58,6 @@ struct LoginView: View {
                         .font(.caption2).foregroundColor(.gray.opacity(0.5)).padding(.bottom, 20)
                 }
             }
-        }
-        // Google 账号选择器
-        .sheet(isPresented: $showAccountPicker) {
-            AccountPickerSheet(accounts: googleAccounts) { selectedAccount in
-                self.loginWithGoogle(account: selectedAccount)
-            }
-            .presentationDetents([.height(350)])
-            .presentationDragIndicator(.visible)
         }
         // 扫码弹窗
         .sheet(isPresented: $isShowingScanner) {
@@ -118,14 +105,14 @@ struct LoginView: View {
             }
             .padding(.horizontal, 60)
             
-            // 🔵 2. Google 登录按钮 (模拟)
+            // 🔵 2. Google 登录按钮（实际 Google 账号）
             Button(action: {
-                showAccountPicker = true
+                signInWithGoogle()
             }) {
                 HStack(spacing: 15) {
                     ZStack {
                         Color.white
-                        Image(systemName: "g.circle.fill") // 模拟 G 图标
+                        Image(systemName: "g.circle.fill")
                             .resizable()
                             .frame(width: 20, height: 20)
                             .foregroundColor(.red)
@@ -143,6 +130,13 @@ struct LoginView: View {
                 .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 3)
             }
             .padding(.horizontal, 40)
+
+            if !authErrorText.isEmpty {
+                Text(authErrorText)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 40)
+            }
         }
         .padding(.top, 10)
     }
@@ -241,50 +235,37 @@ struct LoginView: View {
         }
     }
     
-    // Google 登录处理 (模拟)
-    func loginWithGoogle(account: (name: String, email: String, icon: String, color: Color)) {
-        self.studentName = account.name
-        self.loginMethodText = account.email // 显示邮箱
-        self.showAccountPicker = false
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation { self.step = 2 }
+    func signInWithGoogle() {
+        authErrorText = ""
+        guard let rootVC = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow })?.rootViewController else {
+            authErrorText = "画面の初期化に失敗しました"
+            return
         }
-    }
-}
 
-// ==========================================
-// 📜 账号选择器 (Google 风格)
-// ==========================================
-struct AccountPickerSheet: View {
-    let accounts: [(name: String, email: String, icon: String, color: Color)]
-    let onSelect: ((name: String, email: String, icon: String, color: Color)) -> Void
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack { Image(systemName: "g.circle.fill").foregroundColor(.gray); Text("アカウントの選択").font(.headline) }
-                .padding(.top, 25).padding(.bottom, 20)
-            Divider()
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(accounts, id: \.email) { account in
-                        Button(action: { onSelect(account) }) {
-                            HStack(spacing: 15) {
-                                Circle().fill(account.color.opacity(0.2)).frame(width: 40, height: 40)
-                                    .overlay(Image(systemName: account.icon).foregroundColor(account.color))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(account.name).font(.subheadline).foregroundColor(.black).bold()
-                                    Text(account.email).font(.caption).foregroundColor(.gray)
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20).padding(.vertical, 12).contentShape(Rectangle())
-                        }
-                        Divider().padding(.leading, 75)
-                    }
-                }
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, error in
+            if let error = error {
+                authErrorText = "Googleログイン失敗: \(error.localizedDescription)"
+                return
             }
-        }.background(Color.white)
+
+            guard let user = result?.user else {
+                authErrorText = "Googleユーザー情報の取得に失敗しました"
+                return
+            }
+
+            let profileName = user.profile?.name ?? user.profile?.givenName ?? "Google User"
+            let email = user.profile?.email ?? "Google"
+
+            self.studentName = profileName
+            self.loginMethodText = email
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation { self.step = 2 }
+            }
+        }
     }
 }
 

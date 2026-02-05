@@ -306,10 +306,16 @@
                 </div>
 
                 <!-- 停止ボタン -->
-                <button onclick="stopRealReaction()" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-black text-xl py-4 rounded-xl shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3">
-                    <i class="fas fa-stop-circle text-2xl"></i>
-                    投票を終了して履歴に保存
-                </button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button onclick="stopRealReaction()" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-black text-xl py-4 rounded-xl shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3">
+                        <i class="fas fa-stop-circle text-2xl"></i>
+                        投票を終了して履歴に保存
+                    </button>
+                    <button onclick="abortRealReaction()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-black text-xl py-4 rounded-xl shadow transition-all flex items-center justify-center gap-3">
+                        <i class="fas fa-ban text-xl"></i>
+                        この投票を破棄
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -656,7 +662,8 @@
             });
 
             // 更新投票人数和百分比
-            const votedCount = votedStudents.size;
+            const sumFromReactions = Object.values(realReactionData).reduce((a, b) => a + (Number(b) || 0), 0);
+            const votedCount = Math.max(votedStudents.size, sumFromReactions);
             document.getElementById('rr-voted-count').innerText = votedCount;
             
             const percentage = studentCount > 0 ? Math.round((votedCount / studentCount) * 100) : 0;
@@ -670,6 +677,9 @@
             const duration = Math.floor((Date.now() - realReactionStartTime) / 1000);
 
             // 保存到历史记录
+            const sumFromReactions = Object.values(realReactionData).reduce((a, b) => a + (Number(b) || 0), 0);
+            const finalVotedCount = Math.max(votedStudents.size, sumFromReactions);
+
             const rrSessionData = {
                 class_id: COURSE_ID,
                 class_name: courseInfo?.title || '未設定',
@@ -678,8 +688,8 @@
                 end_time: endTime,
                 duration: duration,
                 student_count: studentCount,
-                voted_count: votedStudents.size,
-                participation_rate: studentCount > 0 ? Math.round((votedStudents.size / studentCount) * 100) : 0,
+                voted_count: finalVotedCount,
+                participation_rate: studentCount > 0 ? Math.round((finalVotedCount / studentCount) * 100) : 0,
                 reactions: { ...realReactionData },
                 type: 'real_reaction' // 标记为 RealReaction 类型
             };
@@ -701,11 +711,25 @@
                 // 关闭弹窗
                 document.getElementById('real-reaction-modal').classList.add('hidden');
 
-                alert(`✅ 投票を終了しました！\n\n参加率: ${rrSessionData.participation_rate}%\n投票数: ${votedStudents.size}/${studentCount}人\n\nデータは履歴に保存されました。`);
+                alert(`✅ 投票を終了しました！\n\n参加率: ${rrSessionData.participation_rate}%\n投票数: ${finalVotedCount}/${studentCount}人\n\nデータは履歴に保存されました。`);
 
             } catch (err) {
                 console.error("❌ 保存失败:", err);
                 alert("保存に失敗しました: " + err.message);
+            }
+        }
+
+        async function abortRealReaction() {
+            if (!realReactionActive) return;
+            if (!confirm("このリアルリアクションを破棄しますか？\n今回の投票データは保存されません。")) return;
+
+            try {
+                await db.ref(`courses/${COURSE_ID}/real_reaction`).remove();
+                closeRealReactionUI();
+                alert("投票を破棄しました。");
+            } catch (err) {
+                console.error("❌ 破棄失败:", err);
+                alert("破棄に失敗しました: " + err.message);
             }
         }
 
