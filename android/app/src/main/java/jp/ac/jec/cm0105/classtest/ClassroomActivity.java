@@ -114,6 +114,7 @@ public class ClassroomActivity extends AppCompatActivity {
         setupButtons();
         setupBottomNavigation();
         fetchCourseInfo();
+        observeClassActiveState();
 
         // 6. 启动动画
         gameLoopHandler.post(gameLoopRunnable);
@@ -334,6 +335,22 @@ public class ClassroomActivity extends AppCompatActivity {
     }
 
     // === 下面是原本的动画和获取信息代码 (保持不变) ===
+
+    private void observeClassActiveState() {
+        courseRef.child("is_active").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Boolean active = snapshot.getValue(Boolean.class);
+                if (Boolean.FALSE.equals(active)) {
+                    Toast.makeText(ClassroomActivity.this, "授業が終了しました", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
 
     private void fetchCourseInfo() {
         courseRef.addListenerForSingleValueEvent(new ValueEventListener() {

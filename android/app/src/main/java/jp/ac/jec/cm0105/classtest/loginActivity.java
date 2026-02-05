@@ -154,6 +154,15 @@ public class loginActivity extends AppCompatActivity {
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
+        GoogleSignInAccount lastAccount = GoogleSignIn.getLastSignedInAccount(this);
+        if (lastAccount != null) {
+            Intent intent = new Intent(loginActivity.this, MainActivity.class);
+            intent.putExtra("USER_NAME", lastAccount.getDisplayName());
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         // 登录页仅负责认证，课程加入放到 Home(MainActivity)
         btnGoogleLogin.setOnClickListener(v -> signIn());
         etClassCode.setEnabled(false);

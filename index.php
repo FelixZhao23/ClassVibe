@@ -188,8 +188,8 @@
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700 text-lg"><i class="fas fa-chart-line text-blue-500 mr-2"></i>クラスの熱量 (リアルタイム)</h3>
                         <div class="flex gap-4 text-xs font-bold">
-                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full"></span> 参加アクティブ</div>
-                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> 困惑シグナル</div>
+                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full"></span> ポジティブ</div>
+                            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> ネガティブ</div>
                         </div>
                     </div>
                     <div class="relative w-full h-[300px]">
@@ -357,8 +357,8 @@
         const chart = new Chart(ctx, {
             type: 'line',
             data: { labels: [], datasets: [
-                { label: 'Active', data: [], borderColor: '#34D399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.4 },
-                { label: 'Confused', data: [], borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.1)', fill: true, tension: 0.4 }
+                { label: 'Positive', data: [], borderColor: '#34D399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.4 },
+                { label: 'Negative', data: [], borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.1)', fill: true, tension: 0.4 }
             ]},
             options: {
                 responsive: true,
@@ -376,8 +376,8 @@
         let curReacts = { happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 };
         let studentCount = 0;
         let prevReacts = null;
-        let heatActive = 0;
-        let heatConfused = 0;
+        let heatPositive = 0;
+        let heatNegative = 0;
         let battleState = { active: true, red: 0, blue: 0 };
         let classHpState = { max: 200, current: 200, alive: true };
         let lastInteractionTs = Date.now();
@@ -386,6 +386,7 @@
         let sessionStartTime = null;
         let sessionTopic = '';
         let courseInfo = null;
+        let classActivated = false;
 
         // 🆕 RealReaction Variables
         let realReactionActive = false;
@@ -399,6 +400,10 @@
             const data = snapshot.val();
             if (data) {
                 courseInfo = data;
+                if (!classActivated) {
+                    classActivated = true;
+                    db.ref(`courses/${COURSE_ID}/is_active`).set(true);
+                }
                 
                 document.getElementById('course-title').innerText = data.title;
                 document.getElementById('course-time').innerText = data.time || "--";
@@ -495,10 +500,10 @@
             if (totalNew === 0) return;
             lastInteractionTs = Date.now();
 
-            const activeGain = totalNew;
-            const confusedGain = delta.confused + delta.question;
-            heatActive = Math.min(100, heatActive + (activeGain * 4));
-            heatConfused = Math.min(100, heatConfused + (confusedGain * 6));
+            const positiveGain = delta.happy + delta.amazing + delta.confused;
+            const negativeGain = delta.question + delta.sleepy + delta.bored;
+            heatPositive = Math.min(100, heatPositive + (positiveGain * 8));
+            heatNegative = Math.min(100, heatNegative + (negativeGain * 8));
 
             const redGain = delta.happy + delta.amazing;
             const blueGain = delta.confused + delta.question;
@@ -931,6 +936,7 @@
                 db.ref(`courses/${COURSE_ID}/real_reaction`).remove();
                 db.ref(`courses/${COURSE_ID}/student_metrics`).remove();
                 db.ref(`courses/${COURSE_ID}/active_students`).remove(); 
+                db.ref(`courses/${COURSE_ID}/is_active`).set(false);
                 db.ref(`courses/${COURSE_ID}/game`).remove();
                 if (hpDecayTimer) {
                     clearInterval(hpDecayTimer);
@@ -999,11 +1005,11 @@
 
         // Chart Loop (リアルタイム表示: 上がって、無操作で減衰)
         setInterval(() => {
-            heatActive = Math.max(0, heatActive * 0.9);
-            heatConfused = Math.max(0, heatConfused * 0.88);
+            heatPositive = Math.max(0, heatPositive * 0.9);
+            heatNegative = Math.max(0, heatNegative * 0.88);
             chart.data.labels.push('');
-            chart.data.datasets[0].data.push(Math.round(heatActive));
-            chart.data.datasets[1].data.push(Math.round(heatConfused));
+            chart.data.datasets[0].data.push(Math.round(heatPositive));
+            chart.data.datasets[1].data.push(Math.round(heatNegative));
             if (chart.data.labels.length > 30) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); chart.data.datasets[1].data.shift(); }
             chart.update();
         }, 2000);

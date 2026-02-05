@@ -625,6 +625,15 @@ class StudentViewModel: ObservableObject {
         
         if isMock { return }
         
+        dbRef.child("courses").child(id).child("is_active").observe(.value) { snapshot in
+            if let active = snapshot.value as? Bool, active == false {
+                DispatchQueue.main.async {
+                    self.errorMessage = "授業が終了しました。"
+                    self.currentCourseId = nil
+                }
+            }
+        }
+
         // 监听游戏模式
         dbRef.child("courses").child(id).child("game_mode").observe(.value) { snapshot in
             if let modeStr = snapshot.value as? String {
@@ -664,17 +673,26 @@ class StudentViewModel: ObservableObject {
 
             self.dbRef.child("active_codes").child(self.roomCode).observeSingleEvent(of: .value) { snapshot in
                 if let courseId = snapshot.value as? String {
-                    let teamStr = (self.myTeam == .red) ? "red" : "blue"
-                    let studentInfo: [String: Any] = [
-                        "name": self.studentName,
-                        "team": teamStr,
-                        "joined_at": ServerValue.timestamp()
-                    ]
-                    let activeRef = self.dbRef.child("courses").child(courseId).child("active_students").child(uid)
-                    activeRef.setValue(studentInfo)
-                    activeRef.onDisconnectRemoveValue()
-                    self.enterCourse(id: courseId)
-                    completion(true)
+                    self.dbRef.child("courses").child(courseId).child("is_active").observeSingleEvent(of: .value) { activeSnap in
+                        let isActive = (activeSnap.value as? Bool) ?? false
+                        guard isActive else {
+                            self.errorMessage = "授業はまだ開始していません"
+                            completion(false)
+                            return
+                        }
+
+                        let teamStr = (self.myTeam == .red) ? "red" : "blue"
+                        let studentInfo: [String: Any] = [
+                            "name": self.studentName,
+                            "team": teamStr,
+                            "joined_at": ServerValue.timestamp()
+                        ]
+                        let activeRef = self.dbRef.child("courses").child(courseId).child("active_students").child(uid)
+                        activeRef.setValue(studentInfo)
+                        activeRef.onDisconnectRemoveValue()
+                        self.enterCourse(id: courseId)
+                        completion(true)
+                    }
                 } else {
                     self.errorMessage = "コードが無効です"
                     completion(false)

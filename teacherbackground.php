@@ -32,7 +32,7 @@
             </div>
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2">
-                    <img id="user-avatar" src="" alt="" class="w-8 h-8 rounded-full border border-gray-200 hidden">
+                    <img id="user-avatar" src="" alt="avatar" class="w-8 h-8 rounded-full border border-gray-200 object-cover hidden">
                     <span class="text-sm text-gray-500">ようこそ, <b id="teacher-name">読み込み中...</b></span>
                 </div>
                 <button onclick="handleLogout()" class="text-sm text-red-500 hover:text-red-700 border border-red-200 px-3 py-1 rounded hover:bg-red-50 transition">
@@ -187,6 +187,7 @@
             if (user.photoURL) {
                 const avatar = document.getElementById('user-avatar');
                 avatar.src = user.photoURL;
+                avatar.onerror = () => { avatar.classList.add('hidden'); };
                 avatar.classList.remove('hidden');
             }
         }
@@ -314,7 +315,7 @@
                 time: periodString,   // 例: 1限〜2限
                 teacher_id: CURRENT_TEACHER_ID,
                 simple_code: simpleCode,
-                is_active: true,
+                is_active: false,
                 reactions: { happy: 0, amazing: 0, confused: 0, question: 0 }
             };
 

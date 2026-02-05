@@ -109,10 +109,7 @@
         const db = firebase.database();
         const provider = new firebase.auth.GoogleAuthProvider();
 
-        // 🔥 关键修改：强制每次都显示账号选择界面
-        provider.setCustomParameters({
-            prompt: 'select_account'
-        });
+        // 保持账号会话，避免每次都强制重新选账号
 
         // ==========================================
         // 2. Google ログイン処理

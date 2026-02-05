@@ -93,10 +93,29 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 String courseId = snapshot.getValue(String.class);
-                Intent intent = new Intent(MainActivity.this, ClassroomActivity.class);
-                intent.putExtra("COURSE_ID", courseId);
-                intent.putExtra("USER_NAME", userName == null ? "student" : userName);
-                startActivity(intent);
+                FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
+                        .getReference("courses")
+                        .child(courseId)
+                        .child("is_active")
+                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot activeSnap) {
+                                boolean isActive = Boolean.TRUE.equals(activeSnap.getValue(Boolean.class));
+                                if (!isActive) {
+                                    Toast.makeText(MainActivity.this, "授業はまだ開始していません", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                Intent intent = new Intent(MainActivity.this, ClassroomActivity.class);
+                                intent.putExtra("COURSE_ID", courseId);
+                                intent.putExtra("USER_NAME", userName == null ? "student" : userName);
+                                startActivity(intent);
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                Toast.makeText(MainActivity.this, "接続エラー", Toast.LENGTH_SHORT).show();
+                            }
+                        });
             }
 
             @Override
