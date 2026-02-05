@@ -8,11 +8,9 @@ import GoogleSignIn
 struct LoginView: View {
     @Binding var studentName: String
     @Binding var roomCode: String
-    var onJoin: () -> Void
+    var onAuthSuccess: () -> Void
     
     // --- 内部状态 ---
-    @State private var step = 1 // 1: 选择登录方式, 2: 输入课程码
-    @State private var isShowingScanner = false
     @State private var loginMethodText = "" // 显示当前是用什么登录的
     @State private var authErrorText = ""
     
@@ -38,30 +36,16 @@ struct LoginView: View {
                 .padding(.top, 80)
                 .padding(.bottom, 40)
                 
-                // 2. 主内容区 (动画切换)
                 VStack {
-                    if step == 1 {
-                        authSelectionView
-                            .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
-                    } else {
-                        joinClassView
-                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-                    }
+                    authSelectionView
                 }
-                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: step)
                 
                 Spacer()
                 
                 // Footer
-                if step == 1 {
-                    Text("© 2026 ClassVibe Project")
-                        .font(.caption2).foregroundColor(.gray.opacity(0.5)).padding(.bottom, 20)
-                }
+                Text("© 2026 ClassVibe Project")
+                    .font(.caption2).foregroundColor(.gray.opacity(0.5)).padding(.bottom, 20)
             }
-        }
-        // 扫码弹窗
-        .sheet(isPresented: $isShowingScanner) {
-            QRScannerView(scannedCode: $roomCode, isPresented: $isShowingScanner)
         }
     }
     
@@ -142,72 +126,6 @@ struct LoginView: View {
     }
     
     // ==========================================
-    // 视图 2: 加入课程 (输码/扫码)
-    // ==========================================
-    var joinClassView: some View {
-        VStack(spacing: 25) {
-            
-            // 👤 用户卡片
-            HStack(spacing: 15) {
-                ZStack {
-                    Circle().fill(Color.blue.opacity(0.1))
-                    // 根据登录方式显示不同图标
-                    Image(systemName: loginMethodText == "Apple ID" ? "applelogo" : "g.circle.fill")
-                        .foregroundColor(.black)
-                        .font(.title3)
-                }
-                .frame(width: 50, height: 50)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(studentName)
-                        .font(.headline).foregroundColor(.black)
-                    Text(loginMethodText)
-                        .font(.caption).foregroundColor(.gray)
-                }
-                Spacer()
-                Button("変更") { withAnimation { step = 1 } }
-                    .font(.caption).foregroundColor(.blue)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Color.blue.opacity(0.1)).cornerRadius(20)
-            }
-            .padding().background(Color.white).cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 10)
-            .padding(.horizontal, 30)
-            
-            // 🔢 输入框
-            VStack(alignment: .leading, spacing: 10) {
-                Text("参加コード (4桁)").font(.caption).bold().foregroundColor(.gray).padding(.leading, 5)
-                HStack(spacing: 12) {
-                    TextField("1234", text: $roomCode)
-                        .font(.system(size: 28, weight: .bold, design: .monospaced))
-                        .multilineTextAlignment(.center).keyboardType(.numberPad)
-                        .frame(height: 60).background(Color.white).cornerRadius(16)
-                        .shadow(color: .black.opacity(0.05), radius: 5)
-                        .onChange(of: roomCode) { newValue in if newValue.count > 4 { roomCode = String(newValue.prefix(4)) } }
-                    
-                    Button(action: { isShowingScanner = true }) {
-                        Image(systemName: "qrcode.viewfinder").font(.title).foregroundColor(.white)
-                            .frame(width: 60, height: 60).background(Color.black).cornerRadius(16)
-                            .shadow(color: .black.opacity(0.2), radius: 5)
-                    }
-                }
-            }
-            .padding(.horizontal, 30)
-            
-            Spacer().frame(height: 20)
-            
-            Button(action: onJoin) {
-                HStack { Text("教室に入る").font(.title3).bold(); Image(systemName: "arrow.right").font(.headline) }
-                .frame(maxWidth: .infinity).frame(height: 56)
-                .background(roomCode.count == 4 ? Color.blue : Color.gray.opacity(0.3))
-                .foregroundColor(.white).cornerRadius(28)
-                .shadow(color: .blue.opacity(0.3), radius: 8, y: 4)
-            }
-            .disabled(roomCode.count < 4).padding(.horizontal, 30)
-        }
-    }
-    
-    // ==========================================
     // 逻辑处理函数
     // ==========================================
     
@@ -229,8 +147,7 @@ struct LoginView: View {
             
             self.studentName = name
             self.loginMethodText = "Apple ID"
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { withAnimation { self.step = 2 } }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { onAuthSuccess() }
         default: break
         }
     }
@@ -276,7 +193,7 @@ struct LoginView: View {
                 self.loginMethodText = email
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation { self.step = 2 }
+                    onAuthSuccess()
                 }
             }
         }

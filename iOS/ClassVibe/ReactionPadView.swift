@@ -9,6 +9,8 @@ import SwiftUI
 struct ReactionPadView: View {
     @ObservedObject var viewModel: StudentViewModel
     @State private var showLeaveAlert = false
+    @State private var isShowingScanner = false
+    @State private var isJoining = false
     
     var backgroundColor: Color {
         switch viewModel.gameMode {
@@ -19,87 +21,17 @@ struct ReactionPadView: View {
     }
     
     var body: some View {
-        ZStack {
-            backgroundColor.ignoresSafeArea()
-            
-            if viewModel.gameMode == .fever {
-                LinearGradient(gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple]), startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .opacity(0.3).blendMode(.overlay).ignoresSafeArea()
-            }
-            
-            VStack {
-                HStack {
-                    Button(action: { showLeaveAlert = true }) {
-                        Image(systemName: "xmark.circle.fill").font(.title2).foregroundColor(.gray)
-                    }
-                    Spacer()
-                    Text(viewModel.myTeam == .red ? "🟥 RED TEAM" : "🟦 BLUE TEAM")
-                        .font(.headline).bold()
-                        .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
-                    Spacer()
-                    Button(action: { viewModel.debugToggleMode() }) {
-                        Image(systemName: "slider.horizontal.3").font(.title2)
-                    }
-                }
-                .padding(.horizontal)
-                
-                Spacer()
-                
-                // Mochi-chan
-                MochiPetView(mood: viewModel.currentPetMood)
-                    .frame(height: 180)
-                    .padding(.bottom, 20)
-                
-                // Buttons
-            // 格式: (Key, Emoji, 显示文字, 背景颜色)
-                                let buttons = [
-                                    ("understood", "⭕️", "よくわかった", Color.green),
-                                    ("difficult", "🤯", "難しい", Color(red: 0.8, green: 0.2, blue: 0.2)),
-                                    ("lost", "🌀", "ぜんぜん\nわからない", Color.red),
-                                    ("unclear", "🤔", "ちょっと\nわからない", Color.orange),
-                                    ("slacking", "🎮", "サボり中", Color.indigo),
-                                    ("boring", "😩", "面倒", Color.gray)
-                                ]
-                                
-                                // 使用 ScrollView 以防屏幕放不下 10 个按钮
-                                ScrollView {
-                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
-                                        ForEach(buttons, id: \.0) { btn in
-                                            Button(action: { viewModel.sendReaction(type: btn.0) }) {
-                                                VStack(spacing: 5) {
-                                                    Text(btn.1).font(.system(size: 40)) // Emoji
-                                                        .scaleEffect(viewModel.showReactionSuccess == btn.0 ? 1.5 : 1.0)
-                                                        .animation(.spring(), value: viewModel.showReactionSuccess)
-                                                    
-                                                    Text(btn.2) // 文字
-                                                        .font(.headline)
-                                                        .bold()
-                                                        .foregroundColor(.white)
-                                                        .multilineTextAlignment(.center)
-                                                        .minimumScaleFactor(0.8) // 文字太长自动缩小
-                                                }
-                                                .frame(maxWidth: .infinity)
-                                                .frame(height: 100) //稍微调低高度以便放下更多
-                                                .background(viewModel.gameMode == .fever ? Color.purple : (viewModel.gameMode == .battle ? (viewModel.myTeam == .red ? .red : .blue) : btn.3))
-                                                .cornerRadius(16)
-                                                .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 3)
-                                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.5), lineWidth: 1))
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal)
-                                    .padding(.bottom, 20) // 底部留白
-                                }
-                
-                // Points
-                HStack {
-                    Image(systemName: "star.fill").foregroundColor(.yellow)
-                    Text("Points: \(viewModel.vibePoints)").font(.headline)
-                }
-                .padding().background(Color.white.opacity(0.8)).cornerRadius(20).padding(.bottom)
+        Group {
+            if viewModel.currentCourseId == nil {
+                joinView
+            } else {
+                classroomView
             }
         }
         .navigationBarHidden(true)
+        .sheet(isPresented: $isShowingScanner) {
+            QRScannerView(scannedCode: $viewModel.roomCode, isPresented: $isShowingScanner)
+        }
         .alert("教室を退出しますか？", isPresented: $showLeaveAlert) {
             Button("キャンセル", role: .cancel) {}
             Button("退出", role: .destructive) {
@@ -107,6 +39,122 @@ struct ReactionPadView: View {
             }
         } message: {
             Text("退出すると参加状態が解除されます。")
+        }
+    }
+
+    private var joinView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Text("ホーム").font(.largeTitle).bold()
+            Text("参加コードを入力するかQRをスキャンしてください").font(.subheadline).foregroundColor(.gray)
+            HStack(spacing: 12) {
+                TextField("1234", text: $viewModel.roomCode)
+                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .multilineTextAlignment(.center)
+                    .keyboardType(.numberPad)
+                    .frame(height: 56)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .onChange(of: viewModel.roomCode) { value in
+                        if value.count > 4 { viewModel.roomCode = String(value.prefix(4)) }
+                    }
+                Button(action: { isShowingScanner = true }) {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.title2).foregroundColor(.white)
+                        .frame(width: 56, height: 56)
+                        .background(Color.black)
+                        .cornerRadius(12)
+                }
+            }
+            .padding(.horizontal, 24)
+
+            Button(action: joinClass) {
+                Text(isJoining ? "接続中..." : "教室に参加")
+                    .bold()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(viewModel.roomCode.count == 4 ? Color.blue : Color.gray.opacity(0.35))
+                    .foregroundColor(.white)
+                    .cornerRadius(14)
+            }
+            .disabled(viewModel.roomCode.count < 4 || isJoining)
+            .padding(.horizontal, 24)
+            Spacer()
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    }
+
+    private var classroomView: some View {
+        ZStack {
+            backgroundColor.ignoresSafeArea()
+            if viewModel.gameMode == .fever {
+                LinearGradient(gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple]), startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .opacity(0.3).blendMode(.overlay).ignoresSafeArea()
+            }
+
+            VStack {
+                HStack {
+                    Text(viewModel.myTeam == .red ? "🟥 RED TEAM" : "🟦 BLUE TEAM")
+                        .font(.headline).bold()
+                        .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
+                    Spacer()
+                    Button("退室") { showLeaveAlert = true }
+                        .font(.subheadline).bold()
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Color.white.opacity(0.85))
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal)
+
+                Spacer()
+                MochiPetView(mood: viewModel.currentPetMood)
+                    .frame(height: 180)
+                    .padding(.bottom, 20)
+
+                let buttons = [
+                    ("understood", "⭕️", "よくわかった", Color.green),
+                    ("difficult", "🤯", "難しい", Color(red: 0.8, green: 0.2, blue: 0.2)),
+                    ("lost", "🌀", "ぜんぜん\nわからない", Color.red),
+                    ("unclear", "🤔", "ちょっと\nわからない", Color.orange),
+                    ("slacking", "🎮", "サボり中", Color.indigo),
+                    ("boring", "😩", "面倒", Color.gray)
+                ]
+
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
+                        ForEach(buttons, id: \.0) { btn in
+                            Button(action: { viewModel.sendReaction(type: btn.0) }) {
+                                VStack(spacing: 5) {
+                                    Text(btn.1).font(.system(size: 40))
+                                        .scaleEffect(viewModel.showReactionSuccess == btn.0 ? 1.5 : 1.0)
+                                        .animation(.spring(), value: viewModel.showReactionSuccess)
+                                    Text(btn.2)
+                                        .font(.headline).bold().foregroundColor(.white)
+                                        .multilineTextAlignment(.center).minimumScaleFactor(0.8)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 100)
+                                .background(btn.3)
+                                .cornerRadius(16)
+                                .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 3)
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.5), lineWidth: 1))
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+    }
+
+    private func joinClass() {
+        isJoining = true
+        viewModel.loginAndJoinRoom { success in
+            isJoining = false
+            if !success {
+                // keep on join screen; error text is handled in viewModel
+            }
         }
     }
 }

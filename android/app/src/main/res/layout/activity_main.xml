@@ -3,22 +3,69 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="20dp"
+    android:background="#F8FAFC">
 
     <TextView
         android:id="@+id/tv_welcome"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="正在加载课程..."
-        android:textSize="22sp"
+        android:text="ようこそ"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="#333333"
-        android:layout_marginBottom="16dp"/>
+        android:textColor="#1F2937"
+        android:layout_marginBottom="6dp"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_courses"
+    <TextView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scrollbars="vertical" />
+        android:layout_height="wrap_content"
+        android:text="HOME: 参加コード入力またはQRスキャンで教室へ"
+        android:textSize="13sp"
+        android:textColor="#6B7280"
+        android:layout_marginBottom="20dp"/>
+
+    <EditText
+        android:id="@+id/et_class_code_home"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:hint="4桁コード"
+        android:inputType="number"
+        android:textSize="22sp"
+        android:gravity="center"
+        android:maxLength="4"
+        android:background="@drawable/bg_input_rounded"
+        android:paddingHorizontal="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="14dp">
+
+        <Button
+            android:id="@+id/btn_scan_qr_home"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:text="QR スキャン"/>
+
+        <Space
+            android:layout_width="12dp"
+            android:layout_height="1dp"/>
+
+        <Button
+            android:id="@+id/btn_join_home"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:text="教室へ参加"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_profile_home"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="12dp"
+        android:text="プロフィールへ"/>
 
 </LinearLayout>

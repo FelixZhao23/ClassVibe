@@ -47,39 +47,34 @@ public class ProfileActivity extends AppCompatActivity {
 
         tvPoints = findViewById(R.id.tv_points);
 
-        if (courseId == null || userId == null) {
+        if (userId == null) {
             Toast.makeText(this, "用户信息加载失败", Toast.LENGTH_SHORT).show();
-            // 如果为空，可能无法进行后续操作
         } else {
-            // 2. 连接到 Firebase：获取这个人的 points 节点
-            // 路径：courses/{courseId}/members/{userId}/points
-            myPointsRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
-                    .getReference("courses")
-                    .child(courseId)
-                    .child("members")
-                    .child(userId)
-                    .child("points");
+            if (courseId != null) {
+                myPointsRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
+                        .getReference("courses")
+                        .child(courseId)
+                        .child("members")
+                        .child(userId)
+                        .child("points");
 
-            // 3. 实时监听分数变化
-            pointsListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        // 如果数据库里有值，读出来 (Firebase 数字通常是 Long)
-                        Long val = snapshot.getValue(Long.class);
-                        currentPoints = (val != null) ? val.intValue() : 0;
-                    } else {
-                        // 如果数据库没有 points 字段（比如刚进来还没点过按钮），默认 0
-                        currentPoints = 0;
+                pointsListener = new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            Long val = snapshot.getValue(Long.class);
+                            currentPoints = (val != null) ? val.intValue() : 0;
+                        } else {
+                            currentPoints = 0;
+                        }
+                        updatePointDisplay();
                     }
-                    updatePointDisplay();
-                }
 
-                @Override
-                public void onCancelled(DatabaseError error) { }
-            };
-            // 开启监听
-            myPointsRef.addValueEventListener(pointsListener);
+                    @Override
+                    public void onCancelled(DatabaseError error) { }
+                };
+                myPointsRef.addValueEventListener(pointsListener);
+            }
 
             growthRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
                     .getReference("users")

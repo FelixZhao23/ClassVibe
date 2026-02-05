@@ -148,29 +148,20 @@ public class loginActivity extends AppCompatActivity {
         etClassCode = findViewById(R.id.et_class_code);
         btnScanQr = findViewById(R.id.btn_scan_qr); // 绑定新按钮
 
-        // 2. 初始化 Firebase 引用
-        // 指向 "active_codes" 节点
-        codesRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
-                .getReference("active_codes");
-
         // 3. 配置 Google 登录
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        // 4. 按钮点击事件
-        btnGoogleLogin.setOnClickListener(v -> handleLoginAttempt());
+        // 登录页仅负责认证，课程加入放到 Home(MainActivity)
+        btnGoogleLogin.setOnClickListener(v -> signIn());
+        etClassCode.setEnabled(false);
+        etClassCode.setHint("ログイン後にホームで参加コードを入力");
 
-        // 5. 设置扫码按钮点击事件
+        // 扫码按钮在登录页不再使用
         btnScanQr.setOnClickListener(v -> {
-            // 启动扫码
-            ScanOptions options = new ScanOptions();
-            options.setPrompt("请扫描老师展示的课程二维码");
-            options.setBeepEnabled(true);
-            options.setOrientationLocked(true);
-            options.setCaptureActivity(CaptureActivityPortrait.class); // 如果你加了竖屏类就用这个
-            barcodeLauncher.launch(options);
+            Toast.makeText(this, "ログイン後、HOME画面でQR参加できます", Toast.LENGTH_SHORT).show();
         });
     }//onCreate end
 
@@ -189,49 +180,7 @@ public class loginActivity extends AppCompatActivity {
                 }
             });
 
-    private void handleLoginAttempt() {
-        String inputCode = etClassCode.getText().toString().trim();
-
-        // 简单的非空检查
-        if (TextUtils.isEmpty(inputCode)) {
-            etClassCode.setError("请输入授業コード");
-            return;
-        }
-
-        // 禁用按钮防止重复点击
-        btnGoogleLogin.setEnabled(false);
-        btnGoogleLogin.setText("検証中..."); // 提示正在验证
-
-        // ★核心逻辑：去 Firebase 查询这个代码是否存在
-        codesRef.child(inputCode).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    // A. 代码存在！
-                    // 获取对应的值 (例如: "-OivOVfeliAkn8zNvD2R")
-                    targetCourseId = snapshot.getValue(String.class);
-
-                    Log.d("Login", "验证成功，课程ID: " + targetCourseId);
-
-                    // B. 代码验证通过后，才启动谷歌登录
-                    signIn();
-                } else {
-                    // C. 代码不存在
-                    Toast.makeText(loginActivity.this, "無効な授業コードです", Toast.LENGTH_SHORT).show();
-                    etClassCode.setError("コードが見つかりません");
-
-                    // 恢复按钮状态
-                    resetButton();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(loginActivity.this, "网络错误，请重试", Toast.LENGTH_SHORT).show();
-                resetButton();
-            }
-        });
-    }
+    private void handleLoginAttempt() { signIn(); }
 
     private void resetButton() {
         btnGoogleLogin.setEnabled(true);
@@ -261,23 +210,11 @@ public class loginActivity extends AppCompatActivity {
             String personName = account.getDisplayName();
             Toast.makeText(this, "登录成功: " + personName, Toast.LENGTH_SHORT).show();
 
-            // ★★★ 修改这里：直接跳转到 ClassroomActivity ★★★
-            Intent intent = new Intent(loginActivity.this, ClassroomActivity.class); // 改成 ClassroomActivity
+            // 登录后先进入 HOME 页面
+            Intent intent = new Intent(loginActivity.this, MainActivity.class);
 
             // 1. 传用户名 (欢迎用)
             intent.putExtra("USER_NAME", personName);
-
-            // 2. 传课程ID (核心！告诉教室页面我们要进哪个房间)
-            // targetCourseId 是之前 verifyCode 时查出来的，比如 "-OivOVfeliAkn8zNvD2R"
-            if (targetCourseId != null) {
-                intent.putExtra("COURSE_ID", targetCourseId);
-            } else {
-                // 如果没有ID (逻辑漏洞保护)，还是回主页吧
-                Toast.makeText(this, "课程ID丢失，返回主页", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-                return;
-            }
 
             startActivity(intent);
             finish();

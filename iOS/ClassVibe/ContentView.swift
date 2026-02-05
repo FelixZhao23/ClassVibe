@@ -28,53 +28,32 @@ struct ContentView: View {
             // --- A. 未登录状态：显示登录页 ---
             LoginView(
                 studentName: $viewModel.studentName,
-                roomCode: $viewModel.roomCode,
-                onJoin: {
-                    // 当用户点击“进入教室”时触发
-                    viewModel.loginAndJoinRoom { success in
-                        if success {
-                            // 成功：切换到主界面
-                            isLoggedIn = true
-                        } else {
-                            // 失败：显示错误弹窗
-                            showAlert = true
-                        }
-                    }
-                }
-            )
+                roomCode: $viewModel.roomCode
+            ) {
+                isLoggedIn = true
+            }
             .alert(isPresented: $showAlert) {
-                // 错误提示弹窗
                 Alert(
-                    title: Text("エラー"), // 错误
-                    message: Text(viewModel.errorMessage ?? "接続に失敗しました"), // 连接失败
+                    title: Text("エラー"),
+                    message: Text(viewModel.errorMessage ?? "接続に失敗しました"),
                     dismissButton: .default(Text("OK"))
-                )
+                }
             }
         } else {
-            // --- B. 已登录状态：显示主界面 ---
             TabView {
-                // Tab 1: 教室 (互动面板)
                 NavigationView {
                     ReactionPadView(viewModel: viewModel)
                 }
                 .tabItem {
-                    Label("教室", systemImage: "person.3.fill")
+                    Label("ホーム", systemImage: "house.fill")
                 }
                 
-                // Tab 2: 个人中心 (扭蛋/背包)
                 GachaProfileView(viewModel: viewModel)
                     .tabItem {
                         Label("マイページ", systemImage: "person.crop.circle")
                     }
             }
             .accentColor(.blue)
-            // ✨ 监听退出事件：如果 currentCourseId 变为空 (用户在 ReactionPadView 点了退出)
-            // 自动切回登录页面，让用户可以重新输码进入其他房间
-            .onChange(of: viewModel.currentCourseId) { newValue in
-                if newValue == nil {
-                    isLoggedIn = false
-                }
-            }
         }
     }
 }
