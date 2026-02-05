@@ -36,10 +36,11 @@ struct ContentView: View {
                 Alert(
                     title: Text("エラー"),
                     message: Text(viewModel.errorMessage ?? "接続に失敗しました"),
-                    dismissButton: .default(Text("OK"))
-                }
+                    dismissButton: .default(Text("OK")))
             }
-        } else {
+        }
+        
+        else {
             TabView {
                 NavigationView {
                     ReactionPadView(viewModel: viewModel)
@@ -56,11 +57,11 @@ struct ContentView: View {
             .accentColor(.blue)
         }
     }
-}
-
-// 预览设置
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView(viewModel: StudentViewModel(isMock: true))
-    }
-}
+    
+    
+    // 预览设置
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            ContentView(viewModel: StudentViewModel(isMock: true))
+        }
+    }}
