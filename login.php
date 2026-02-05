@@ -161,6 +161,10 @@
             }).then(() => {
                 // コース管理画面へ遷移
                 window.location.href = "teacherbackground.php";
+            }).catch((err) => {
+                // 记录失败但不阻塞登录流程，避免因规则变更卡在登录页
+                console.warn("teachers write failed:", err);
+                window.location.href = "teacherbackground.php";
             });
         }
         

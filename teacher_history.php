@@ -116,6 +116,35 @@
                     </div>
                 </div>
             </div>
+
+            <div id="settlement-stats" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6 mb-6">
+                <h3 class="font-bold text-amber-700 mb-4 flex items-center gap-2">
+                    <i class="fas fa-flag-checkered"></i> 授業終了時の結算
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl p-4 border border-amber-100">
+                        <div class="text-xs text-amber-500 font-bold">赤青対抗戦</div>
+                        <div class="mt-2 text-sm text-gray-600">
+                            RED <span class="font-black text-red-500" id="st-red-score">0</span>
+                            /
+                            BLUE <span class="font-black text-blue-500" id="st-blue-score">0</span>
+                        </div>
+                        <div class="mt-1 text-lg font-black text-amber-700" id="st-winner">-</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-amber-100">
+                        <div class="text-xs text-amber-500 font-bold">クラスHP</div>
+                        <div class="mt-2 text-lg font-black text-gray-800">
+                            <span id="st-hp-remaining">0</span> / <span id="st-hp-max">0</span>
+                        </div>
+                        <div class="mt-1 text-sm font-bold" id="st-hp-result">-</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-amber-100">
+                        <div class="text-xs text-amber-500 font-bold">ポイント清算</div>
+                        <div class="mt-2 text-sm text-gray-600">報酬: <span class="font-black text-emerald-600" id="st-reward">+0</span></div>
+                        <div class="mt-1 text-sm text-gray-600">ペナルティ: <span class="font-black text-red-500" id="st-penalty">-0</span></div>
+                    </div>
+                </div>
+            </div>
             
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
                 <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -351,6 +380,7 @@
                 
                 // 显示RealReaction专属统计
                 document.getElementById('rr-stats').classList.remove('hidden');
+                document.getElementById('settlement-stats').classList.add('hidden');
                 document.getElementById('rr-voted-count').innerText = session.voted_count || 0;
                 document.getElementById('rr-participation').innerText = session.participation_rate || 0;
                 document.getElementById('rr-total').innerText = session.student_count || 0;
@@ -363,6 +393,33 @@
             } else {
                 badge.classList.add('hidden');
                 document.getElementById('rr-stats').classList.add('hidden');
+
+                const battle = session.battle_result || null;
+                const hp = session.class_hp_result || null;
+                const settlement = session.settlement || null;
+                const hasSettlement = !!(battle || hp || settlement);
+
+                if (hasSettlement) {
+                    const winner = battle?.winner || 'draw';
+                    let winnerText = '引き分け';
+                    if (winner === 'red') winnerText = '勝者: RED TEAM';
+                    if (winner === 'blue') winnerText = '勝者: BLUE TEAM';
+
+                    document.getElementById('st-red-score').innerText = battle?.red ?? 0;
+                    document.getElementById('st-blue-score').innerText = battle?.blue ?? 0;
+                    document.getElementById('st-winner').innerText = winnerText;
+
+                    document.getElementById('st-hp-remaining').innerText = hp?.remaining ?? 0;
+                    document.getElementById('st-hp-max').innerText = hp?.max ?? 0;
+                    document.getElementById('st-hp-result').innerText =
+                        (hp?.result === 'survived') ? '生存成功' : ((hp?.result === 'failed') ? 'HP 0 で失敗' : '-');
+
+                    document.getElementById('st-reward').innerText = `+${settlement?.reward_points ?? 0}`;
+                    document.getElementById('st-penalty').innerText = `-${settlement?.penalty_points ?? 0}`;
+                    document.getElementById('settlement-stats').classList.remove('hidden');
+                } else {
+                    document.getElementById('settlement-stats').classList.add('hidden');
+                }
             }
 
             // 生成反应卡片

@@ -372,6 +372,9 @@ class StudentViewModel: ObservableObject {
     
     // ⚠️ 记录当前课程是否已领过积分 (控制一堂课只加1分)
     private var hasParticipatedInCurrentSession: Bool = false
+    private var lastReactionAt: Date? = nil
+    private var lastReactionType: String? = nil
+    private var sameReactionChain: Int = 0
     
     // 数据库引用 (保持你的 URL)
     private lazy var dbRef: DatabaseReference = {
@@ -387,87 +390,196 @@ class StudentViewModel: ObservableObject {
             self.inventory = [RewardItem(name: "预览券", rarity: "SR", icon: "✨")]
         }
     }
-    //发送反馈 (修正版 - 写入 courses 表)
-        
-        func sendReaction(type: String) {
-            // 1. 震动反馈 (提升手感)
-            let generator = UIImpactFeedbackGenerator(style: (gameMode == .fever) ? .heavy : .medium)
-            generator.impactOccurred()
-            
-    
-            // Web 端通常只统计: amazing, confused, question, happy
-            var dbKey = ""
-            
-            switch type {
-            case "interesting", "trying":
-                dbKey = "amazing"   // 对应 Web 端的 ✨
-            case "difficult", "lost", "panic", "what":
-                dbKey = "confused"  // 对应 Web 端的 😵 (这是重点，你的"难"对应这里的"困惑")
-            case "unclear":
-                dbKey = "question"  // 对应 Web 端的 🙋
-            case "understood":
-                dbKey = "happy"     // 对应 Web 端的 😊
-            default:
-                dbKey = "happy"
+    // 发送反馈：普通模式写 courses/{id}/reactions，RealReaction 模式写 courses/{id}/real_reaction
+    func sendReaction(type: String) {
+        let generator = UIImpactFeedbackGenerator(style: (gameMode == .fever) ? .heavy : .medium)
+        generator.impactOccurred()
+
+        var dbKey = ""
+        switch type {
+        case "interesting", "trying":
+            dbKey = "amazing"
+        case "difficult", "lost", "panic", "what":
+            dbKey = "confused"
+        case "unclear":
+            dbKey = "question"
+        case "understood":
+            dbKey = "happy"
+        case "sleep":
+            dbKey = "sleepy"
+        case "boring", "slacking":
+            dbKey = "bored"
+        default:
+            dbKey = "happy"
+        }
+
+        guard !isMock, let courseId = currentCourseId else {
+            print("⚠️ 未连接数据库或未进入课程 (ID为空)")
+            return
+        }
+
+        guard let uid = Auth.auth().currentUser?.uid else {
+            DispatchQueue.main.async {
+                self.errorMessage = "ログイン状態を確認してください"
             }
-            
-        
-            // 确保不仅是 mock 模式，并且已经进入了课程 (有 courseId)
-            if !isMock, let courseId = currentCourseId {
-                
-                // 🎯 目标路径: courses / {ID} / reactions / {dbKey}
-                let reactionPath = dbRef.child("courses")
-                                        .child(courseId)
-                                        .child("reactions")
-                                        .child(dbKey) // 注意这里用的是翻译后的 dbKey
-                
-                // 使用 increment(1) 原子操作，防止多人同时点数据不准
-                reactionPath.setValue(ServerValue.increment(1)) { error, _ in
+            return
+        }
+
+        let metricCtx = makeMetricContext(for: type, dbKey: dbKey)
+        if !metricCtx.accepted {
+            DispatchQueue.main.async {
+                self.errorMessage = "連打しすぎです。少し待ってください。"
+            }
+            return
+        }
+
+        let rrRef = dbRef.child("courses").child(courseId).child("real_reaction")
+        rrRef.observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+
+            let rrData = snapshot.value as? [String: Any]
+            let rrActive = (rrData?["active"] as? Bool) ?? false
+
+            if rrActive {
+                let voted = (rrData?["voted_students"] as? [String: Any])?[uid] != nil
+                if voted {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "リアルリアクションは1人1回までです"
+                    }
+                    return
+                }
+
+                let updates: [String: Any] = [
+                    "reactions/\(dbKey)": ServerValue.increment(1),
+                    "voted_students/\(uid)": [
+                        "name": self.studentName,
+                        "at": ServerValue.timestamp()
+                    ]
+                ]
+
+                rrRef.updateChildValues(updates) { error, _ in
                     if let error = error {
-                        print("❌ 写入失败: \(error.localizedDescription)")
-                    } else {
-                        // 打印日志方便你调试
-                        print("🚀 发送成功！")
-                        print("   - 原始按钮: \(type)")
-                        print("   - 写入Key:  \(dbKey)")
-                        print("   - 写入路径: courses/\(courseId)/reactions/\(dbKey)")
+                        print("❌ RealReaction 写入失败: \(error.localizedDescription)")
+                        return
+                    }
+                    self.updateStudentMetrics(
+                        courseId: courseId,
+                        uid: uid,
+                        type: type,
+                        dbKey: dbKey,
+                        weight: metricCtx.weight
+                    )
+                    DispatchQueue.main.async {
+                        self.onReactionSent(type: type)
                     }
                 }
-                
-                // 如果是对战模式，额外计分 (保持在 courses 下)
-                if gameMode == .battle {
-                    let teamKey = (myTeam == .red) ? "red_score" : "blue_score"
-                    dbRef.child("courses")
-                         .child(courseId)
-                         .child("battle")
-                         .child(teamKey)
-                         .setValue(ServerValue.increment(1))
+                return
+            }
+
+            let reactionPath = self.dbRef
+                .child("courses")
+                .child(courseId)
+                .child("reactions")
+                .child(dbKey)
+
+            reactionPath.setValue(ServerValue.increment(1)) { error, _ in
+                if let error = error {
+                    print("❌ 写入失败: \(error.localizedDescription)")
+                    return
                 }
-            } else {
-                print("⚠️ 未连接数据库或未进入课程 (ID为空)")
-            }
-            
-          
-            // 步骤 C: 积分逻辑 (每堂课限领一次)
-           
-            if !hasParticipatedInCurrentSession {
-                vibePoints += 1
-                hasParticipatedInCurrentSession = true
-                print("🎉 积分 +1 (本节课首次互动)")
-            }
-            
-    
-            // 步骤 D: 本地 UI 动画 & 馒头表情
-      
-            updateMoodLocally(type: type) // 立即更新本地表情
-            
-            showReactionSuccess = type
-            if gameMode == .fever { showFeverEffect.toggle() }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self.showReactionSuccess = nil
+
+                if self.gameMode == .battle {
+                    let teamKey = (self.myTeam == .red) ? "red_score" : "blue_score"
+                    self.dbRef
+                        .child("courses")
+                        .child(courseId)
+                        .child("battle")
+                        .child(teamKey)
+                        .setValue(ServerValue.increment(1))
+                }
+
+                self.updateStudentMetrics(
+                    courseId: courseId,
+                    uid: uid,
+                    type: type,
+                    dbKey: dbKey,
+                    weight: metricCtx.weight
+                )
+
+                DispatchQueue.main.async {
+                    self.onReactionSent(type: type)
+                }
             }
         }
+    }
+
+    private func makeMetricContext(for type: String, dbKey: String) -> (accepted: Bool, weight: Double) {
+        let now = Date()
+        if let last = lastReactionAt, now.timeIntervalSince(last) < 2.0 {
+            return (false, 0.0)
+        }
+
+        if lastReactionType == type {
+            sameReactionChain += 1
+        } else {
+            sameReactionChain = 1
+            lastReactionType = type
+        }
+        lastReactionAt = now
+
+        let weight: Double
+        switch sameReactionChain {
+        case 1: weight = 1.0
+        case 2: weight = 0.6
+        default: weight = 0.3
+        }
+        return (true, weight)
+    }
+
+    private func updateStudentMetrics(courseId: String, uid: String, type: String, dbKey: String, weight: Double) {
+        let metricRef = dbRef.child("courses").child(courseId).child("student_metrics").child(uid)
+        let teamStr: String = (myTeam == .red) ? "red" : "blue"
+
+        var understood = 0
+        var question = 0
+        var confused = 0
+
+        if dbKey == "happy" || dbKey == "amazing" { understood = 1 }
+        if dbKey == "question" { question = 1 }
+        if dbKey == "confused" || dbKey == "sleepy" || dbKey == "bored" { confused = 1 }
+
+        let teamContribution = ((teamStr == "red" && (dbKey == "happy" || dbKey == "amazing")) ||
+                               (teamStr == "blue" && (dbKey == "confused" || dbKey == "question"))) ? 1 : 0
+
+        let updates: [String: Any] = [
+            "display_name": studentName.isEmpty ? "student" : studentName,
+            "team": teamStr,
+            "effective_interactions": ServerValue.increment(weight),
+            "understood_count": ServerValue.increment(understood),
+            "question_count": ServerValue.increment(question),
+            "confused_count": ServerValue.increment(confused),
+            "team_contribution": ServerValue.increment(teamContribution),
+            "last_reaction_at": ServerValue.timestamp()
+        ]
+
+        metricRef.updateChildValues(updates)
+    }
+
+    private func onReactionSent(type: String) {
+        if !hasParticipatedInCurrentSession {
+            vibePoints += 1
+            hasParticipatedInCurrentSession = true
+            print("🎉 积分 +1 (本节课首次互动)")
+        }
+
+        updateMoodLocally(type: type)
+        showReactionSuccess = type
+        if gameMode == .fever { showFeverEffect.toggle() }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.showReactionSuccess = nil
+        }
+    }
 
 
     

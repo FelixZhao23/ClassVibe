@@ -26,6 +26,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue; // 必须导入这个
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class ClassroomActivity extends AppCompatActivity {
@@ -43,6 +45,10 @@ public class ClassroomActivity extends AppCompatActivity {
     private String currentCourseId;
     private String myUserId; // ★ 现在这个ID会保存在本地
     private String myUserName;
+    private String myTeam = "red";
+    private long lastMetricAt = 0L;
+    private String lastMetricKey = "";
+    private int sameMetricChain = 0;
 
     // === 状态 & 动画变量 ===
     private float moodValue = 0;
@@ -79,6 +85,7 @@ public class ClassroomActivity extends AppCompatActivity {
             myUserId = UUID.randomUUID().toString();
             prefs.edit().putString("SAVED_USER_ID", myUserId).apply();
         }
+        myTeam = (Math.abs(myUserId.hashCode()) % 2 == 0) ? "red" : "blue";
 
         // 3. Firebase 设置
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app");
@@ -135,8 +142,7 @@ public class ClassroomActivity extends AppCompatActivity {
             handleFeedback(10);
             emoteQuestion.setVisibility(View.INVISIBLE);
             animateHappy();
-            courseRef.child("reactions").child("happy").setValue(ServerValue.increment(1));
-            scoreIncrement.onClick(v); // ★ 调用加分
+            submitReaction("happy", "happy", () -> scoreIncrement.onClick(v));
         });
 
         // 2. Hard
@@ -144,8 +150,7 @@ public class ClassroomActivity extends AppCompatActivity {
             handleFeedback(-15);
             emoteQuestion.setVisibility(View.INVISIBLE);
             animateSad();
-            courseRef.child("reactions").child("confused").setValue(ServerValue.increment(1));
-            scoreIncrement.onClick(v); // ★ 调用加分
+            submitReaction("confused", "confused", () -> scoreIncrement.onClick(v));
         });
 
         // 3. Focus (问号右上)
@@ -160,8 +165,7 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setRotation(20);
 
             animateConfused();
-            courseRef.child("reactions").child("question").setValue(ServerValue.increment(1));
-            scoreIncrement.onClick(v); // ★ 调用加分
+            submitReaction("question", "question", () -> scoreIncrement.onClick(v));
         });
 
         // 4. Slow (问号左上)
@@ -176,9 +180,109 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setRotation(-20);
 
             animateLost();
-            courseRef.child("reactions").child("lost").setValue(ServerValue.increment(1));
-            scoreIncrement.onClick(v); // ★ 调用加分
+            // slow/lost 在 RealReaction 中统一并入 confused
+            submitReaction("lost", "confused", () -> scoreIncrement.onClick(v));
         });
+    }
+
+    // RealReaction 开启时，写入 courses/{id}/real_reaction；否则写入普通 reactions
+    private void submitReaction(String normalKey, String rrKey, Runnable onSuccess) {
+        double weight = computeMetricWeight(normalKey);
+        if (weight <= 0) {
+            Toast.makeText(this, "連打しすぎです。少し待ってください。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        DatabaseReference rrRef = courseRef.child("real_reaction");
+        rrRef.child("active").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot activeSnap) {
+                boolean rrActive = Boolean.TRUE.equals(activeSnap.getValue(Boolean.class));
+
+                if (!rrActive) {
+                    courseRef.child("reactions").child(normalKey)
+                            .setValue(ServerValue.increment(1), (error, ref) -> {
+                                if (error == null) {
+                                    updateStudentMetrics(normalKey, weight);
+                                    if (onSuccess != null) onSuccess.run();
+                                }
+                            });
+                    return;
+                }
+
+                rrRef.child("voted_students").child(myUserId)
+                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot voteSnap) {
+                                if (voteSnap.exists()) {
+                                    Toast.makeText(ClassroomActivity.this, "リアルリアクションは1人1回までです", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+
+                                Map<String, Object> updates = new HashMap<>();
+                                updates.put("reactions/" + rrKey, ServerValue.increment(1));
+
+                                Map<String, Object> voteInfo = new HashMap<>();
+                                voteInfo.put("name", myUserName == null ? "student" : myUserName);
+                                voteInfo.put("at", ServerValue.TIMESTAMP);
+                                updates.put("voted_students/" + myUserId, voteInfo);
+
+                                rrRef.updateChildren(updates, (error, ref) -> {
+                                    if (error == null) {
+                                        updateStudentMetrics(rrKey, weight);
+                                        if (onSuccess != null) onSuccess.run();
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) { }
+                        });
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private double computeMetricWeight(String key) {
+        long now = System.currentTimeMillis();
+        if (now - lastMetricAt < 2000) return 0;
+
+        if (key.equals(lastMetricKey)) {
+            sameMetricChain += 1;
+        } else {
+            sameMetricChain = 1;
+            lastMetricKey = key;
+        }
+        lastMetricAt = now;
+
+        if (sameMetricChain == 1) return 1.0;
+        if (sameMetricChain == 2) return 0.6;
+        return 0.3;
+    }
+
+    private void updateStudentMetrics(String metricKey, double weight) {
+        DatabaseReference metricsRef = courseRef.child("student_metrics").child(myUserId);
+
+        int understood = ("happy".equals(metricKey) || "amazing".equals(metricKey)) ? 1 : 0;
+        int question = "question".equals(metricKey) ? 1 : 0;
+        int confused = ("confused".equals(metricKey) || "sleepy".equals(metricKey) || "bored".equals(metricKey)) ? 1 : 0;
+        int teamContribution = 0;
+        if ("red".equals(myTeam) && ("happy".equals(metricKey) || "amazing".equals(metricKey))) teamContribution = 1;
+        if ("blue".equals(myTeam) && ("confused".equals(metricKey) || "question".equals(metricKey))) teamContribution = 1;
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("display_name", myUserName == null ? "student" : myUserName);
+        updates.put("team", myTeam);
+        updates.put("effective_interactions", ServerValue.increment(weight));
+        updates.put("understood_count", ServerValue.increment(understood));
+        updates.put("question_count", ServerValue.increment(question));
+        updates.put("confused_count", ServerValue.increment(confused));
+        updates.put("team_contribution", ServerValue.increment(teamContribution));
+        updates.put("last_reaction_at", ServerValue.TIMESTAMP);
+
+        metricsRef.updateChildren(updates);
     }
 
     // === 底部导航栏 ===
