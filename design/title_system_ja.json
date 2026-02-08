@@ -1,0 +1,136 @@
+{
+  "version": "1.0.0",
+  "locale": "ja-JP",
+  "avatar_style": "anime_pixel_fantasy_characters",
+  "dimensions": [
+    "understand",
+    "question",
+    "collab",
+    "engagement",
+    "stability"
+  ],
+  "common_track": [
+    {
+      "id": "common_01",
+      "name_ja": "教室の新芽",
+      "avatar_id": "av_common_01",
+      "unlock": { "type": "level", "value": 1 }
+    },
+    {
+      "id": "common_02",
+      "name_ja": "出席見習い",
+      "avatar_id": "av_common_02",
+      "unlock": { "type": "level", "value": 3 }
+    },
+    {
+      "id": "common_03",
+      "name_ja": "クラス常連",
+      "avatar_id": "av_common_03",
+      "unlock": { "type": "level", "value": 5 }
+    },
+    {
+      "id": "common_04",
+      "name_ja": "交流フロンティア",
+      "avatar_id": "av_common_04",
+      "unlock": { "type": "level", "value": 8 }
+    }
+  ],
+  "branches": [
+    {
+      "key": "understand",
+      "name_ja": "理解系",
+      "character_line_ja": "ルーン学者",
+      "color": "#2563EB",
+      "symbol": "book",
+      "titles": [
+        { "id": "u_10", "name_ja": "理解の見習い", "threshold": 10, "avatar_id": "av_u_10" },
+        { "id": "u_15", "name_ja": "解法トラベラー", "threshold": 15, "avatar_id": "av_u_15" },
+        { "id": "u_20", "name_ja": "知識クラフター", "threshold": 20, "avatar_id": "av_u_20" },
+        { "id": "u_25", "name_ja": "思考ナビゲーター", "threshold": 25, "avatar_id": "av_u_25" },
+        { "id": "u_30", "name_ja": "真理トラッカー", "threshold": 30, "avatar_id": "av_u_30" }
+      ]
+    },
+    {
+      "key": "question",
+      "name_ja": "質問系",
+      "character_line_ja": "ミスティック調査官",
+      "color": "#14B8A6",
+      "symbol": "question",
+      "titles": [
+        { "id": "q_10", "name_ja": "質問の見習い", "threshold": 10, "avatar_id": "av_q_10" },
+        { "id": "q_15", "name_ja": "ヒントハンター", "threshold": 15, "avatar_id": "av_q_15" },
+        { "id": "q_20", "name_ja": "対話イグナイター", "threshold": 20, "avatar_id": "av_q_20" },
+        { "id": "q_25", "name_ja": "洞察チェイサー", "threshold": 25, "avatar_id": "av_q_25" },
+        { "id": "q_30", "name_ja": "ソクラテスの眼", "threshold": 30, "avatar_id": "av_q_30" }
+      ]
+    },
+    {
+      "key": "collab",
+      "name_ja": "協力系",
+      "character_line_ja": "リンクナイト",
+      "color": "#8B5CF6",
+      "symbol": "handshake",
+      "titles": [
+        { "id": "c_10", "name_ja": "協力の見習い", "threshold": 10, "avatar_id": "av_c_10" },
+        { "id": "c_15", "name_ja": "紅青コーディネーター", "threshold": 15, "avatar_id": "av_c_15" },
+        { "id": "c_20", "name_ja": "チームエンジン", "threshold": 20, "avatar_id": "av_c_20" },
+        { "id": "c_25", "name_ja": "共創キャプテン", "threshold": 25, "avatar_id": "av_c_25" },
+        { "id": "c_30", "name_ja": "クラス連結コア", "threshold": 30, "avatar_id": "av_c_30" }
+      ]
+    },
+    {
+      "key": "engagement",
+      "name_ja": "参加系",
+      "character_line_ja": "ブレイズランナー",
+      "color": "#F59E0B",
+      "symbol": "spark",
+      "titles": [
+        { "id": "e_10", "name_ja": "参加の見習い", "threshold": 10, "avatar_id": "av_e_10" },
+        { "id": "e_15", "name_ja": "インタラクション加速者", "threshold": 15, "avatar_id": "av_e_15" },
+        { "id": "e_20", "name_ja": "ムード点火師", "threshold": 20, "avatar_id": "av_e_20" },
+        { "id": "e_25", "name_ja": "授業プッシャー", "threshold": 25, "avatar_id": "av_e_25" },
+        { "id": "e_30", "name_ja": "熱量スター", "threshold": 30, "avatar_id": "av_e_30" }
+      ]
+    },
+    {
+      "key": "stability",
+      "name_ja": "安定系",
+      "character_line_ja": "ガーディアン",
+      "color": "#10B981",
+      "symbol": "shield",
+      "titles": [
+        { "id": "s_10", "name_ja": "安定の見習い", "threshold": 10, "avatar_id": "av_s_10" },
+        { "id": "s_15", "name_ja": "リズムウォッチャー", "threshold": 15, "avatar_id": "av_s_15" },
+        { "id": "s_20", "name_ja": "秩序リペアラー", "threshold": 20, "avatar_id": "av_s_20" },
+        { "id": "s_25", "name_ja": "クラス守護バリア", "threshold": 25, "avatar_id": "av_s_25" },
+        { "id": "s_30", "name_ja": "不動のガーディアン", "threshold": 30, "avatar_id": "av_s_30" }
+      ]
+    }
+  ],
+  "hybrid_titles": [
+    {
+      "id": "hy_uq",
+      "name_ja": "思考ダブルコア",
+      "avatar_id": "av_hy_uq",
+      "unlock": { "type": "top2", "keys": ["understand", "question"], "min": 22, "gap_percent_lte": 10 }
+    },
+    {
+      "id": "hy_ce",
+      "name_ja": "全体ビートメーカー",
+      "avatar_id": "av_hy_ce",
+      "unlock": { "type": "top2", "keys": ["collab", "engagement"], "min": 22, "gap_percent_lte": 10 }
+    },
+    {
+      "id": "hy_sc",
+      "name_ja": "教室の定海針",
+      "avatar_id": "av_hy_sc",
+      "unlock": { "type": "top2", "keys": ["stability", "collab"], "min": 22, "gap_percent_lte": 10 }
+    },
+    {
+      "id": "hy_all",
+      "name_ja": "五角形レジェンド",
+      "avatar_id": "av_hy_all",
+      "unlock": { "type": "all_dims", "min_each": 20 }
+    }
+  ]
+}

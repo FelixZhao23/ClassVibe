@@ -1,0 +1,233 @@
+[
+  {
+    "avatar_id": "av_common_01",
+    "title_ja": "教室の新芽",
+    "branch": "common",
+    "tier": 1,
+    "file": "assets/avatars_ja/av_common_01.svg"
+  },
+  {
+    "avatar_id": "av_common_02",
+    "title_ja": "出席見習い",
+    "branch": "common",
+    "tier": 2,
+    "file": "assets/avatars_ja/av_common_02.svg"
+  },
+  {
+    "avatar_id": "av_common_03",
+    "title_ja": "クラス常連",
+    "branch": "common",
+    "tier": 3,
+    "file": "assets/avatars_ja/av_common_03.svg"
+  },
+  {
+    "avatar_id": "av_common_04",
+    "title_ja": "交流フロンティア",
+    "branch": "common",
+    "tier": 4,
+    "file": "assets/avatars_ja/av_common_04.svg"
+  },
+  {
+    "avatar_id": "av_u_10",
+    "title_ja": "理解の見習い",
+    "branch": "understand",
+    "tier": 1,
+    "file": "assets/avatars_ja/av_u_10.svg"
+  },
+  {
+    "avatar_id": "av_u_15",
+    "title_ja": "解法トラベラー",
+    "branch": "understand",
+    "tier": 2,
+    "file": "assets/avatars_ja/av_u_15.svg"
+  },
+  {
+    "avatar_id": "av_u_20",
+    "title_ja": "知識クラフター",
+    "branch": "understand",
+    "tier": 3,
+    "file": "assets/avatars_ja/av_u_20.svg"
+  },
+  {
+    "avatar_id": "av_u_25",
+    "title_ja": "思考ナビゲーター",
+    "branch": "understand",
+    "tier": 4,
+    "file": "assets/avatars_ja/av_u_25.svg"
+  },
+  {
+    "avatar_id": "av_u_30",
+    "title_ja": "真理トラッカー",
+    "branch": "understand",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_u_30.svg"
+  },
+  {
+    "avatar_id": "av_q_10",
+    "title_ja": "質問の見習い",
+    "branch": "question",
+    "tier": 1,
+    "file": "assets/avatars_ja/av_q_10.svg"
+  },
+  {
+    "avatar_id": "av_q_15",
+    "title_ja": "ヒントハンター",
+    "branch": "question",
+    "tier": 2,
+    "file": "assets/avatars_ja/av_q_15.svg"
+  },
+  {
+    "avatar_id": "av_q_20",
+    "title_ja": "対話イグナイター",
+    "branch": "question",
+    "tier": 3,
+    "file": "assets/avatars_ja/av_q_20.svg"
+  },
+  {
+    "avatar_id": "av_q_25",
+    "title_ja": "洞察チェイサー",
+    "branch": "question",
+    "tier": 4,
+    "file": "assets/avatars_ja/av_q_25.svg"
+  },
+  {
+    "avatar_id": "av_q_30",
+    "title_ja": "ソクラテスの眼",
+    "branch": "question",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_q_30.svg"
+  },
+  {
+    "avatar_id": "av_c_10",
+    "title_ja": "協力の見習い",
+    "branch": "collab",
+    "tier": 1,
+    "file": "assets/avatars_ja/av_c_10.svg"
+  },
+  {
+    "avatar_id": "av_c_15",
+    "title_ja": "紅青コーディネーター",
+    "branch": "collab",
+    "tier": 2,
+    "file": "assets/avatars_ja/av_c_15.svg"
+  },
+  {
+    "avatar_id": "av_c_20",
+    "title_ja": "チームエンジン",
+    "branch": "collab",
+    "tier": 3,
+    "file": "assets/avatars_ja/av_c_20.svg"
+  },
+  {
+    "avatar_id": "av_c_25",
+    "title_ja": "共創キャプテン",
+    "branch": "collab",
+    "tier": 4,
+    "file": "assets/avatars_ja/av_c_25.svg"
+  },
+  {
+    "avatar_id": "av_c_30",
+    "title_ja": "クラス連結コア",
+    "branch": "collab",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_c_30.svg"
+  },
+  {
+    "avatar_id": "av_e_10",
+    "title_ja": "参加の見習い",
+    "branch": "engagement",
+    "tier": 1,
+    "file": "assets/avatars_ja/av_e_10.svg"
+  },
+  {
+    "avatar_id": "av_e_15",
+    "title_ja": "インタラクション加速者",
+    "branch": "engagement",
+    "tier": 2,
+    "file": "assets/avatars_ja/av_e_15.svg"
+  },
+  {
+    "avatar_id": "av_e_20",
+    "title_ja": "ムード点火師",
+    "branch": "engagement",
+    "tier": 3,
+    "file": "assets/avatars_ja/av_e_20.svg"
+  },
+  {
+    "avatar_id": "av_e_25",
+    "title_ja": "授業プッシャー",
+    "branch": "engagement",
+    "tier": 4,
+    "file": "assets/avatars_ja/av_e_25.svg"
+  },
+  {
+    "avatar_id": "av_e_30",
+    "title_ja": "熱量スター",
+    "branch": "engagement",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_e_30.svg"
+  },
+  {
+    "avatar_id": "av_s_10",
+    "title_ja": "安定の見習い",
+    "branch": "stability",
+    "tier": 1,
+    "file": "assets/avatars_ja/av_s_10.svg"
+  },
+  {
+    "avatar_id": "av_s_15",
+    "title_ja": "リズムウォッチャー",
+    "branch": "stability",
+    "tier": 2,
+    "file": "assets/avatars_ja/av_s_15.svg"
+  },
+  {
+    "avatar_id": "av_s_20",
+    "title_ja": "秩序リペアラー",
+    "branch": "stability",
+    "tier": 3,
+    "file": "assets/avatars_ja/av_s_20.svg"
+  },
+  {
+    "avatar_id": "av_s_25",
+    "title_ja": "クラス守護バリア",
+    "branch": "stability",
+    "tier": 4,
+    "file": "assets/avatars_ja/av_s_25.svg"
+  },
+  {
+    "avatar_id": "av_s_30",
+    "title_ja": "不動のガーディアン",
+    "branch": "stability",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_s_30.svg"
+  },
+  {
+    "avatar_id": "av_hy_uq",
+    "title_ja": "思考ダブルコア",
+    "branch": "hybrid",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_hy_uq.svg"
+  },
+  {
+    "avatar_id": "av_hy_ce",
+    "title_ja": "全体ビートメーカー",
+    "branch": "hybrid",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_hy_ce.svg"
+  },
+  {
+    "avatar_id": "av_hy_sc",
+    "title_ja": "教室の定海針",
+    "branch": "hybrid",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_hy_sc.svg"
+  },
+  {
+    "avatar_id": "av_hy_all",
+    "title_ja": "五角形レジェンド",
+    "branch": "hybrid",
+    "tier": 5,
+    "file": "assets/avatars_ja/av_hy_all.svg"
+  }
+]

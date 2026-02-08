@@ -61,6 +61,15 @@
             android:text="教室へ参加"/>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tv_course_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="14sp"
+        android:textColor="#2563EB"
+        android:layout_marginTop="10dp"/>
+
     <Button
         android:id="@+id/btn_profile_home"
         android:layout_width="match_parent"

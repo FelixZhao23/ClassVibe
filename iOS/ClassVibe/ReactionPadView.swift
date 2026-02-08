@@ -11,6 +11,7 @@ struct ReactionPadView: View {
     @State private var showLeaveAlert = false
     @State private var isShowingScanner = false
     @State private var isJoining = false
+    @State private var previewCourseTitle: String = ""
     
     var backgroundColor: Color {
         switch viewModel.gameMode {
@@ -57,6 +58,13 @@ struct ReactionPadView: View {
                     .cornerRadius(12)
                     .onChange(of: viewModel.roomCode) { value in
                         if value.count > 4 { viewModel.roomCode = String(value.prefix(4)) }
+                        if value.count == 4 {
+                            viewModel.fetchCourseTitleByCode(value) { title in
+                                previewCourseTitle = title ?? ""
+                            }
+                        } else {
+                            previewCourseTitle = ""
+                        }
                     }
                 Button(action: { isShowingScanner = true }) {
                     Image(systemName: "qrcode.viewfinder")
@@ -67,6 +75,13 @@ struct ReactionPadView: View {
                 }
             }
             .padding(.horizontal, 24)
+
+            if !previewCourseTitle.isEmpty {
+                Text("この授業: \(previewCourseTitle)")
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 24)
+            }
 
             Button(action: joinClass) {
                 Text(isJoining ? "接続中..." : "教室に参加")
@@ -94,9 +109,13 @@ struct ReactionPadView: View {
 
             VStack {
                 HStack {
-                    Text(viewModel.myTeam == .red ? "🟥 RED TEAM" : "🟦 BLUE TEAM")
-                        .font(.headline).bold()
-                        .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(viewModel.currentCourseTitle.isEmpty ? "教室" : viewModel.currentCourseTitle)
+                            .font(.headline).bold().foregroundColor(.primary)
+                        Text(viewModel.myTeam == .red ? "🟥 RED TEAM" : "🟦 BLUE TEAM")
+                            .font(.subheadline).bold()
+                            .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
+                    }
                     Spacer()
                     Button("退室") { showLeaveAlert = true }
                         .font(.subheadline).bold()

@@ -47,11 +47,6 @@ struct LoginView: View {
                     .font(.caption2).foregroundColor(.gray.opacity(0.5)).padding(.bottom, 20)
             }
         }
-        .onAppear {
-            if Auth.auth().currentUser != nil {
-                onAuthSuccess()
-            }
-        }
     }
     
     // ==========================================

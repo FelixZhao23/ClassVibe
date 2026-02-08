@@ -353,6 +353,7 @@ class StudentViewModel: ObservableObject {
     // 房间 & 状态
     @Published var roomCode: String = ""
     @Published var currentCourseId: String? = nil
+    @Published var currentCourseTitle: String = ""
     
     // ⚠️ 修复 1: 把它改回普通的 @Published 属性，不再是计算属性
     // 这样我们就可以在点击按钮时自由修改它了
@@ -621,6 +622,7 @@ class StudentViewModel: ObservableObject {
             self.myTeam = self.teamFromUid(self.currentUserId)
             self.errorMessage = nil
             self.currentPetMood = .happy // 进教室时默认开心
+            self.currentCourseTitle = ""
         }
         
         if isMock { return }
@@ -630,6 +632,15 @@ class StudentViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.errorMessage = "授業が終了しました。"
                     self.currentCourseId = nil
+                    self.currentCourseTitle = ""
+                }
+            }
+        }
+
+        dbRef.child("courses").child(id).child("title").observe(.value) { snapshot in
+            if let title = snapshot.value as? String {
+                DispatchQueue.main.async {
+                    self.currentCourseTitle = title
                 }
             }
         }
@@ -718,10 +729,28 @@ class StudentViewModel: ObservableObject {
     func leaveCourse() {
         guard let courseId = currentCourseId, let uid = currentUserId else {
             currentCourseId = nil
+            currentCourseTitle = ""
             return
         }
         dbRef.child("courses").child(courseId).child("active_students").child(uid).removeValue()
         currentCourseId = nil
+        currentCourseTitle = ""
+    }
+
+    func fetchCourseTitleByCode(_ code: String, completion: @escaping (String?) -> Void) {
+        guard code.count == 4 else {
+            completion(nil)
+            return
+        }
+        dbRef.child("active_codes").child(code).observeSingleEvent(of: .value) { snapshot in
+            guard let courseId = snapshot.value as? String else {
+                completion(nil)
+                return
+            }
+            self.dbRef.child("courses").child(courseId).child("title").observeSingleEvent(of: .value) { titleSnap in
+                completion(titleSnap.value as? String)
+            }
+        }
     }
 
     private func teamFromUid(_ uid: String?) -> Team {
