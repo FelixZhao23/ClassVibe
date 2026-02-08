@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC">
+    android:background="#F3F4F6">
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
@@ -25,13 +25,22 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="成長プロフィール"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#111827"
+                android:layout_marginBottom="10dp"/>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="3dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
                 app:cardBackgroundColor="#FFFFFF">
 
                 <LinearLayout
@@ -43,8 +52,8 @@
 
                     <ImageView
                         android:id="@+id/img_role_avatar"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
                         android:src="@android:drawable/sym_def_app_icon"
                         android:background="@drawable/bg_input_rounded"
                         android:padding="8dp"/>
@@ -61,7 +70,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Student"
-                            android:textSize="18sp"
+                            android:textSize="19sp"
                             android:textStyle="bold"
                             android:textColor="#1F2937"/>
 
@@ -70,10 +79,26 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="はじめの一歩"
-                            android:textSize="13sp"
+                            android:textSize="12sp"
                             android:textColor="#4F46E5"
-                            android:layout_marginTop="4dp"/>
+                            android:layout_marginTop="6dp"
+                            android:paddingLeft="10dp"
+                            android:paddingRight="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="4dp"
+                            android:background="#EEF2FF"/>
                     </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btn_settings"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="#F3F4F6"
+                        android:src="@android:drawable/ic_menu_manage"
+                        android:contentDescription="設定"
+                        android:scaleType="centerInside"
+                        android:layout_marginStart="8dp"
+                        android:padding="6dp"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -81,8 +106,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="3dp"
                 app:cardBackgroundColor="#FFFFFF">
 
                 <LinearLayout
@@ -104,8 +129,9 @@
                         android:id="@+id/progress_exp"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="12dp"
+                        android:layout_height="10dp"
                         android:layout_marginTop="8dp"
+                        android:progressTint="#F59E0B"
                         android:max="100"
                         android:progress="0"/>
 
@@ -119,36 +145,65 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <GridLayout
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:columnCount="2">
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
-                <TextView android:id="@+id/tv_dim_understand" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="理解: 0"/>
-                <TextView android:id="@+id/tv_dim_question" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="質問: 0"/>
-                <TextView android:id="@+id/tv_dim_collab" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="協力: 0"/>
-                <TextView android:id="@+id/tv_dim_engagement" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="参加: 0"/>
-                <TextView android:id="@+id/tv_dim_stability" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="安定: 0"/>
-            </GridLayout>
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:columnCount="2">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="成長ログ"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="#334155"
-                android:layout_marginTop="8dp"/>
+                    <TextView android:id="@+id/tv_dim_understand" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="理解: 0" android:textColor="#16A34A" android:background="@drawable/bg_stat_pill"/>
+                    <TextView android:id="@+id/tv_dim_question" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="質問: 0" android:textColor="#2563EB" android:background="@drawable/bg_stat_pill"/>
+                    <TextView android:id="@+id/tv_dim_collab" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="協力: 0" android:textColor="#7C3AED" android:background="@drawable/bg_stat_pill"/>
+                    <TextView android:id="@+id/tv_dim_engagement" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="参加: 0" android:textColor="#DB2777" android:background="@drawable/bg_stat_pill"/>
+                    <TextView android:id="@+id/tv_dim_stability" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="安定: 0" android:textColor="#0D9488" android:background="@drawable/bg_stat_pill"/>
+                </GridLayout>
+            </androidx.cardview.widget.CardView>
 
-            <TextView
-                android:id="@+id/tv_growth_logs"
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="読み込み中..."
-                android:textColor="#4B5563"
-                android:paddingTop="8dp"
-                android:paddingBottom="16dp"/>
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="成長ログ"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:textColor="#334155"/>
+
+                    <TextView
+                        android:id="@+id/tv_growth_logs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="読み込み中..."
+                        android:textColor="#4B5563"
+                        android:background="@drawable/bg_log_card"
+                        android:padding="10dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="2dp"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"
+                        android:lineSpacingExtra="4dp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
         </LinearLayout>
     </ScrollView>
 

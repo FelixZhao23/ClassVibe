@@ -165,8 +165,12 @@
                                 <div class="text-gray-400 text-sm font-bold">VS</div>
                                 <div class="text-blue-500 font-black text-4xl" id="persist-score-blue">0</div>
                             </div>
-                            <div class="relative w-full h-5 bg-gray-200 rounded-full overflow-hidden">
-                                <div id="persist-battle-red-bar" class="h-full bg-gradient-to-r from-red-600 to-red-400" style="width:50%"></div>
+                            <div class="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                                <div id="persist-battle-red-bar" class="absolute left-0 top-0 h-full bg-gradient-to-r from-red-600 to-red-400" style="width:50%"></div>
+                                <div id="persist-battle-blue-bar" class="absolute right-0 top-0 h-full bg-gradient-to-l from-blue-600 to-blue-400" style="width:50%"></div>
+                                <div class="absolute inset-y-0 left-1/2 w-1 bg-white/70 blur-[0.5px]"></div>
+                                <div class="absolute inset-y-0 left-1/2 w-0.5 bg-gray-300/80"></div>
+                                <div id="persist-battle-spark" class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-gradient-to-br from-yellow-200 via-amber-400 to-orange-500 shadow-lg shadow-orange-400/50 animate-pulse"></div>
                             </div>
                         </div>
                         <div>
@@ -436,7 +440,7 @@
                 };
                 updateDashboard();
                 hydratePersistentState(data);
-                applyReactionEffects(curReacts);
+                applyReactionEffects(curReacts, data.student_metrics || {});
 
                 // 🆕 监听 RealReaction 状态（支持刷新后自动恢复）
                 if (data.real_reaction && data.real_reaction.active) {
@@ -485,7 +489,7 @@
             updatePersistentPanels();
         }
 
-        function applyReactionEffects(currentReacts) {
+        function applyReactionEffects(currentReacts, metrics) {
             if (!prevReacts) {
                 prevReacts = { ...currentReacts };
                 return;
@@ -505,10 +509,18 @@
             heatPositive = Math.min(100, heatPositive + (positiveGain * 8));
             heatNegative = Math.min(100, heatNegative + (negativeGain * 8));
 
-            const redGain = delta.happy + delta.amazing;
-            const blueGain = delta.confused + delta.question;
-            battleState.red += redGain;
-            battleState.blue += blueGain;
+            const teamTotals = { red: 0, blue: 0 };
+            if (metrics && typeof metrics === 'object') {
+                Object.values(metrics).forEach(m => {
+                    if (!m) return;
+                    const team = m.team || '';
+                    const contrib = Number(m.team_contribution || 0);
+                    if (team === 'red') teamTotals.red += contrib;
+                    if (team === 'blue') teamTotals.blue += contrib;
+                });
+            }
+            battleState.red = teamTotals.red;
+            battleState.blue = teamTotals.blue;
 
             // 互动导向：任何按钮都能为集体HP续命
             const hpDelta = totalNew;
@@ -523,8 +535,8 @@
             const updates = {};
             updates[`courses/${COURSE_ID}/battle_persistent`] = {
                 active: true,
-                red: battleState.red,
-                blue: battleState.blue
+                red: Math.round(battleState.red),
+                blue: Math.round(battleState.blue)
             };
             updates[`courses/${COURSE_ID}/class_hp`] = {
                 max: classHpState.max,
@@ -555,14 +567,17 @@
         }
 
         function updatePersistentPanels() {
-            const red = battleState.red || 0;
-            const blue = battleState.blue || 0;
+            const red = Math.round(battleState.red || 0);
+            const blue = Math.round(battleState.blue || 0);
             document.getElementById('persist-score-red').innerText = red;
             document.getElementById('persist-score-blue').innerText = blue;
 
-            const total = (red + blue) || 1;
-            const redPercent = Math.round((red / total) * 100);
+            const total = red + blue;
+            const redPercent = total === 0 ? 50 : Math.round((red / total) * 100);
+            const bluePercent = 100 - redPercent;
             document.getElementById('persist-battle-red-bar').style.width = `${redPercent}%`;
+            document.getElementById('persist-battle-blue-bar').style.width = `${bluePercent}%`;
+            document.getElementById('persist-battle-spark').style.left = `${redPercent}%`;
 
             const hpMax = classHpState.max || 200;
             const hpCur = Math.max(0, classHpState.current || 0);

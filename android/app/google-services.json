@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "1002148479668-f0cfc2k86fsc8bm6kpu9b6j3d6bipghr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "jp.ac.jec.cm0105.classtest",
+            "certificate_hash": "fff7cb57b2bb80e4794f5e5b8503b5be4fbec9f4"
+          }
+        },
+        {
           "client_id": "1002148479668-hohr4v2ma5ea839on43m4m7k5maqpdjg.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -38,6 +46,13 @@
             {
               "client_id": "1002148479668-hohr4v2ma5ea839on43m4m7k5maqpdjg.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1002148479668-2ej1in2of5g2ts41r0u4gpibgbruonnr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "jp.ac.jec.cm0123.Classvibe"
+              }
             }
           ]
         }

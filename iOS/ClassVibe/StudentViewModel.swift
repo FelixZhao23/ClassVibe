@@ -377,6 +377,9 @@ class StudentViewModel: ObservableObject {
     private var lastReactionAt: Date? = nil
     private var lastReactionType: String? = nil
     private var sameReactionChain: Int = 0
+    private var teamCountRed: Int = 1
+    private var teamCountBlue: Int = 1
+    private var joinTime: Date = Date()
     
     // 数据库引用 (保持你的 URL)
     private lazy var dbRef: DatabaseReference = {
@@ -394,8 +397,10 @@ class StudentViewModel: ObservableObject {
     }
     // 发送反馈：普通模式写 courses/{id}/reactions，RealReaction 模式写 courses/{id}/real_reaction
     func sendReaction(type: String) {
-        let generator = UIImpactFeedbackGenerator(style: (gameMode == .fever) ? .heavy : .medium)
-        generator.impactOccurred()
+        if isHapticsEnabled() {
+            let generator = UIImpactFeedbackGenerator(style: (gameMode == .fever) ? .heavy : .medium)
+            generator.impactOccurred()
+        }
 
         var dbKey = ""
         switch type {
@@ -515,6 +520,13 @@ class StudentViewModel: ObservableObject {
         }
     }
 
+    private func isHapticsEnabled() -> Bool {
+        if let stored = UserDefaults.standard.object(forKey: "haptics_enabled") as? Bool {
+            return stored
+        }
+        return true
+    }
+
     private func makeMetricContext(for type: String, dbKey: String) -> (accepted: Bool, weight: Double) {
         let now = Date()
         if let last = lastReactionAt, now.timeIntervalSince(last) < 2.0 {
@@ -550,8 +562,7 @@ class StudentViewModel: ObservableObject {
         if dbKey == "question" { question = 1 }
         if dbKey == "confused" || dbKey == "sleepy" || dbKey == "bored" { confused = 1 }
 
-        let teamContribution = ((teamStr == "red" && (dbKey == "happy" || dbKey == "amazing")) ||
-                               (teamStr == "blue" && (dbKey == "confused" || dbKey == "question"))) ? 1 : 0
+        let teamContribution = teamContributionWeight(teamStr: teamStr, base: weight)
 
         let updates: [String: Any] = [
             "display_name": studentName.isEmpty ? "student" : studentName,
@@ -581,6 +592,21 @@ class StudentViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             self.showReactionSuccess = nil
         }
+    }
+
+    private func teamContributionWeight(teamStr: String, base: Double) -> Double {
+        let red = max(1, teamCountRed)
+        let blue = max(1, teamCountBlue)
+        let total = max(1, red + blue)
+        let teamCount = (teamStr == "red") ? red : blue
+
+        let ratio = sqrt(Double(total) / Double(teamCount))
+        let sizeFactor = min(5.0, max(1.0, ratio))
+
+        let elapsed = Date().timeIntervalSince(joinTime)
+        let ramp = min(1.0, max(0.4, elapsed / 30.0))
+
+        return base * sizeFactor * ramp
     }
 
 
@@ -623,6 +649,7 @@ class StudentViewModel: ObservableObject {
             self.errorMessage = nil
             self.currentPetMood = .happy // 进教室时默认开心
             self.currentCourseTitle = ""
+            self.joinTime = Date()
         }
         
         if isMock { return }
@@ -657,6 +684,24 @@ class StudentViewModel: ObservableObject {
                 }
             }
         }
+
+        dbRef.child("courses").child(id).child("active_students").observe(.value) { snapshot in
+            var red = 0
+            var blue = 0
+            if let dict = snapshot.value as? [String: Any] {
+                for (_, value) in dict {
+                    if let row = value as? [String: Any] {
+                        let team = row["team"] as? String ?? ""
+                        if team == "red" { red += 1 }
+                        if team == "blue" { blue += 1 }
+                    }
+                }
+            }
+            DispatchQueue.main.async {
+                self.teamCountRed = max(1, red)
+                self.teamCountBlue = max(1, blue)
+            }
+        }
         
         // ⚠️ 注意：我移除了对 "reactions" 的监听来驱动表情
         // 因为我们现在改用“点击按钮直接驱动表情”，这样反馈最快，也不会被卡死。
@@ -668,7 +713,7 @@ class StudentViewModel: ObservableObject {
     func loginAndJoinRoom(completion: @escaping (Bool) -> Void) {
         if isMock {
             self.currentUserId = "mock-user"
-            self.myTeam = teamFromUid(self.currentUserId)
+            self.myTeam = Bool.random() ? .red : .blue
             completion(true)
             return
         }
@@ -680,7 +725,6 @@ class StudentViewModel: ObservableObject {
 
         let afterAuth: (String) -> Void = { uid in
             self.currentUserId = uid
-            self.myTeam = self.teamFromUid(uid)
 
             self.dbRef.child("active_codes").child(self.roomCode).observeSingleEvent(of: .value) { snapshot in
                 if let courseId = snapshot.value as? String {
@@ -692,17 +736,20 @@ class StudentViewModel: ObservableObject {
                             return
                         }
 
-                        let teamStr = (self.myTeam == .red) ? "red" : "blue"
-                        let studentInfo: [String: Any] = [
-                            "name": self.studentName,
-                            "team": teamStr,
-                            "joined_at": ServerValue.timestamp()
-                        ]
-                        let activeRef = self.dbRef.child("courses").child(courseId).child("active_students").child(uid)
-                        activeRef.setValue(studentInfo)
-                        activeRef.onDisconnectRemoveValue()
-                        self.enterCourse(id: courseId)
-                        completion(true)
+                        self.chooseBalancedTeam(courseId: courseId) { team in
+                            self.myTeam = team
+                            let teamStr = (team == .red) ? "red" : "blue"
+                            let studentInfo: [String: Any] = [
+                                "name": self.studentName,
+                                "team": teamStr,
+                                "joined_at": ServerValue.timestamp()
+                            ]
+                            let activeRef = self.dbRef.child("courses").child(courseId).child("active_students").child(uid)
+                            activeRef.setValue(studentInfo)
+                            activeRef.onDisconnectRemoveValue()
+                            self.enterCourse(id: courseId)
+                            completion(true)
+                        }
                     }
                 } else {
                     self.errorMessage = "コードが無効です"
@@ -723,6 +770,27 @@ class StudentViewModel: ObservableObject {
                 self.errorMessage = "ログイン失敗"
                 completion(false)
             }
+        }
+    }
+
+    private func chooseBalancedTeam(courseId: String, completion: @escaping (Team) -> Void) {
+        dbRef.child("courses").child(courseId).child("active_students").observeSingleEvent(of: .value) { snapshot in
+            var red = 0
+            var blue = 0
+            if let dict = snapshot.value as? [String: Any] {
+                for (_, value) in dict {
+                    if let row = value as? [String: Any] {
+                        let team = row["team"] as? String ?? ""
+                        if team == "red" { red += 1 }
+                        if team == "blue" { blue += 1 }
+                    }
+                }
+            }
+            let team: Team
+            if red > blue { team = .blue }
+            else if blue > red { team = .red }
+            else { team = Bool.random() ? .red : .blue }
+            completion(team)
         }
     }
 

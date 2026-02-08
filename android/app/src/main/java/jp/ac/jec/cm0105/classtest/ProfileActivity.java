@@ -1,6 +1,7 @@
 package jp.ac.jec.cm0105.classtest;
 
 import android.os.Bundle;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.ImageView;
@@ -9,6 +10,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
+import android.widget.ImageButton;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -32,6 +34,7 @@ public class ProfileActivity extends AppCompatActivity {
     private View titleUpgradeOverlay;
     private LinearLayout titleUpgradeCard;
     private String userId;
+    private ImageButton btnSettings;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
 
     private DatabaseReference userRef;
@@ -141,6 +144,14 @@ public class ProfileActivity extends AppCompatActivity {
         titleUpgradeOverlay = findViewById(R.id.title_upgrade_overlay);
         titleUpgradeCard = findViewById(R.id.title_upgrade_card);
         tvTitleUpgradeName = findViewById(R.id.tv_title_upgrade_name);
+        btnSettings = findViewById(R.id.btn_settings);
+
+        if (btnSettings != null) {
+            btnSettings.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, SettingsActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     private void maybeShowTitleUpgrade(String nextTitle) {

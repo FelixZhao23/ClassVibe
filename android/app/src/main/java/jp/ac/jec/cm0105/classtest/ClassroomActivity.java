@@ -6,8 +6,12 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.content.SharedPreferences; // 必须导入这个
+import android.content.res.ColorStateList;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.graphics.Color;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +19,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -39,6 +46,12 @@ public class ClassroomActivity extends AppCompatActivity {
     private ImageView eyeLeft, eyeRight, mouth;
     private TextView tvClassTitle;
     private TextView emoteQuestion;
+    private TextView tvTeamLabel;
+    private View btnLeaveRoom;
+    private View btnEasy, btnHard, btnFast, btnSlow, btnSlacking, btnBoring;
+    private View classroomRoot;
+    private static final String PREFS = "classvibe_prefs";
+    private static final String KEY_HAPTICS = "haptics_enabled";
 
     // === 核心变量 ===
     private DatabaseReference courseRef;
@@ -50,6 +63,9 @@ public class ClassroomActivity extends AppCompatActivity {
     private long lastMetricAt = 0L;
     private String lastMetricKey = "";
     private int sameMetricChain = 0;
+    private int teamCountRed = 1;
+    private int teamCountBlue = 1;
+    private long joinTimeMs = System.currentTimeMillis();
 
     // === 状态 & 动画变量 ===
     private float moodValue = 0;
@@ -87,6 +103,7 @@ public class ClassroomActivity extends AppCompatActivity {
             prefs.edit().putString("SAVED_USER_ID", myUserId).apply();
         }
         myTeam = (Math.abs(myUserId.hashCode()) % 2 == 0) ? "red" : "blue";
+        joinTimeMs = System.currentTimeMillis();
 
         // 3. Firebase 设置
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app");
@@ -105,22 +122,24 @@ public class ClassroomActivity extends AppCompatActivity {
         mouth = findViewById(R.id.mouth);
         tvClassTitle = findViewById(R.id.tv_class_title);
         emoteQuestion = findViewById(R.id.emote_question);
+        tvTeamLabel = findViewById(R.id.tv_team_label);
+        btnLeaveRoom = findViewById(R.id.btn_leave_room);
+        btnEasy = findViewById(R.id.btn_easy);
+        btnHard = findViewById(R.id.btn_hard);
+        btnFast = findViewById(R.id.btn_fast);
+        btnSlow = findViewById(R.id.btn_slow);
+        btnSlacking = findViewById(R.id.btn_slacking);
+        btnBoring = findViewById(R.id.btn_boring);
+        classroomRoot = findViewById(R.id.classroom_root);
 
         if (tvClassTitle != null && myUserName != null) {
-            tvClassTitle.setText("欢迎, " + myUserName);
+            tvClassTitle.setText("教室");
+        }
+        if (btnLeaveRoom != null) {
+            btnLeaveRoom.setOnClickListener(v -> showLeaveConfirm());
         }
 
-        // 5. 初始化功能
-        setupOnlinePresence();
-        setupButtons();
-        setupBottomNavigation();
-        fetchCourseInfo();
-        observeClassActiveState();
-
-        // 6. 启动动画
-        gameLoopHandler.post(gameLoopRunnable);
-        blinkHandler.post(blinkRunnable);
-        startBreathAnimation();
+        chooseBalancedTeamAndStart();
     }
 
     // === 上线打卡 ===
@@ -140,6 +159,13 @@ public class ClassroomActivity extends AppCompatActivity {
 
     // === ★★★ 核心修改：按钮点击加积分 ★★★ ===
     private void setupButtons() {
+        attachPressEffects(btnEasy);
+        attachPressEffects(btnHard);
+        attachPressEffects(btnFast);
+        attachPressEffects(btnSlow);
+        attachPressEffects(btnSlacking);
+        attachPressEffects(btnBoring);
+
         // 定义一个通用的加分方法
         View.OnClickListener scoreIncrement = v -> {
             // 在 Firebase 里，把 points 字段加 1 (原子操作，不会冲突)
@@ -148,7 +174,9 @@ public class ClassroomActivity extends AppCompatActivity {
         };
 
         // 1. Happy
-        findViewById(R.id.btn_easy).setOnClickListener(v -> {
+        btnEasy.setOnClickListener(v -> {
+            triggerHaptic();
+            pulseHighlight(btnEasy);
             handleFeedback(10);
             emoteQuestion.setVisibility(View.INVISIBLE);
             animateHappy();
@@ -156,7 +184,9 @@ public class ClassroomActivity extends AppCompatActivity {
         });
 
         // 2. Hard
-        findViewById(R.id.btn_hard).setOnClickListener(v -> {
+        btnHard.setOnClickListener(v -> {
+            triggerHaptic();
+            pulseHighlight(btnHard);
             handleFeedback(-15);
             emoteQuestion.setVisibility(View.INVISIBLE);
             animateSad();
@@ -164,7 +194,9 @@ public class ClassroomActivity extends AppCompatActivity {
         });
 
         // 3. ぜんぜんわからない
-        findViewById(R.id.btn_fast).setOnClickListener(v -> {
+        btnFast.setOnClickListener(v -> {
+            triggerHaptic();
+            pulseHighlight(btnFast);
             handleFeedback(0);
 
             emoteQuestion.setVisibility(View.VISIBLE);
@@ -179,7 +211,9 @@ public class ClassroomActivity extends AppCompatActivity {
         });
 
         // 4. ちょっとわからない
-        findViewById(R.id.btn_slow).setOnClickListener(v -> {
+        btnSlow.setOnClickListener(v -> {
+            triggerHaptic();
+            pulseHighlight(btnSlow);
             handleFeedback(-5);
 
             emoteQuestion.setVisibility(View.VISIBLE);
@@ -194,7 +228,9 @@ public class ClassroomActivity extends AppCompatActivity {
         });
 
         // 5. サボり中
-        findViewById(R.id.btn_slacking).setOnClickListener(v -> {
+        btnSlacking.setOnClickListener(v -> {
+            triggerHaptic();
+            pulseHighlight(btnSlacking);
             handleFeedback(-5);
             emoteQuestion.setVisibility(View.INVISIBLE);
             animateSad();
@@ -202,12 +238,73 @@ public class ClassroomActivity extends AppCompatActivity {
         });
 
         // 6. 面倒
-        findViewById(R.id.btn_boring).setOnClickListener(v -> {
+        btnBoring.setOnClickListener(v -> {
+            triggerHaptic();
+            pulseHighlight(btnBoring);
             handleFeedback(-5);
             emoteQuestion.setVisibility(View.INVISIBLE);
             animateSad();
             submitReaction("bored", "bored", () -> scoreIncrement.onClick(v));
         });
+    }
+
+    private void triggerHaptic() {
+        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean(KEY_HAPTICS, true);
+        if (!enabled) return;
+
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (vibrator == null) return;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE));
+        } else {
+            vibrator.vibrate(20);
+        }
+    }
+
+    private void attachPressEffects(View view) {
+        if (view == null) return;
+        view.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(70).start();
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        });
+    }
+
+    private void pulseHighlight(View view) {
+        if (view == null) return;
+        if (view instanceof com.google.android.material.button.MaterialButton) {
+            com.google.android.material.button.MaterialButton button =
+                    (com.google.android.material.button.MaterialButton) view;
+            ColorStateList original = button.getBackgroundTintList();
+            int base = original != null ? original.getDefaultColor() : Color.WHITE;
+            int highlight = blendColor(base, Color.WHITE, 0.18f);
+            button.setBackgroundTintList(ColorStateList.valueOf(highlight));
+            button.postDelayed(() -> {
+                if (original != null) {
+                    button.setBackgroundTintList(original);
+                }
+            }, 160);
+        } else {
+            view.setAlpha(0.88f);
+            view.animate().alpha(1f).setDuration(160).start();
+        }
+    }
+
+    private int blendColor(int color, int overlay, float ratio) {
+        int r = (int) ((1 - ratio) * Color.red(color) + ratio * Color.red(overlay));
+        int g = (int) ((1 - ratio) * Color.green(color) + ratio * Color.green(overlay));
+        int b = (int) ((1 - ratio) * Color.blue(color) + ratio * Color.blue(overlay));
+        return Color.rgb(r, g, b);
     }
 
     // RealReaction 开启时，写入 courses/{id}/real_reaction；否则写入普通 reactions
@@ -293,9 +390,7 @@ public class ClassroomActivity extends AppCompatActivity {
         int understood = ("happy".equals(metricKey) || "amazing".equals(metricKey)) ? 1 : 0;
         int question = "question".equals(metricKey) ? 1 : 0;
         int confused = ("confused".equals(metricKey) || "sleepy".equals(metricKey) || "bored".equals(metricKey)) ? 1 : 0;
-        int teamContribution = 0;
-        if ("red".equals(myTeam) && ("happy".equals(metricKey) || "amazing".equals(metricKey))) teamContribution = 1;
-        if ("blue".equals(myTeam) && ("confused".equals(metricKey) || "question".equals(metricKey))) teamContribution = 1;
+        double teamContribution = computeTeamContribution(weight);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("display_name", myUserName == null ? "student" : myUserName);
@@ -308,6 +403,94 @@ public class ClassroomActivity extends AppCompatActivity {
         updates.put("last_reaction_at", ServerValue.TIMESTAMP);
 
         metricsRef.updateChildren(updates);
+    }
+
+    private double computeTeamContribution(double base) {
+        int red = Math.max(1, teamCountRed);
+        int blue = Math.max(1, teamCountBlue);
+        int total = Math.max(1, red + blue);
+        int teamCount = "red".equals(myTeam) ? red : blue;
+
+        double ratio = Math.sqrt((double) total / (double) teamCount);
+        double sizeFactor = Math.min(5.0, Math.max(1.0, ratio));
+        double elapsed = (System.currentTimeMillis() - joinTimeMs) / 1000.0;
+        double ramp = Math.min(1.0, Math.max(0.4, elapsed / 30.0));
+        return base * sizeFactor * ramp;
+    }
+
+    private void observeTeamCounts() {
+        courseRef.child("active_students").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                int red = 0;
+                int blue = 0;
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String team = child.child("team").getValue(String.class);
+                    if ("red".equals(team)) red += 1;
+                    if ("blue".equals(team)) blue += 1;
+                }
+                teamCountRed = Math.max(1, red);
+                teamCountBlue = Math.max(1, blue);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void chooseBalancedTeamAndStart() {
+        courseRef.child("active_students").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                int red = 0;
+                int blue = 0;
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String team = child.child("team").getValue(String.class);
+                    if ("red".equals(team)) red += 1;
+                    if ("blue".equals(team)) blue += 1;
+                }
+                if (red > blue) {
+                    myTeam = "blue";
+                } else if (blue > red) {
+                    myTeam = "red";
+                } else {
+                    myTeam = (Math.abs(myUserId.hashCode()) % 2 == 0) ? "red" : "blue";
+                }
+
+                updateTeamLabel();
+                applyTeamBackground();
+
+                // 初始化功能
+                setupOnlinePresence();
+                setupButtons();
+                setupBottomNavigation();
+                fetchCourseInfo();
+                observeClassActiveState();
+                observeTeamCounts();
+
+                // 启动动画
+                gameLoopHandler.post(gameLoopRunnable);
+                blinkHandler.post(blinkRunnable);
+                startBreathAnimation();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // fallback: hash-based
+                myTeam = (Math.abs(myUserId.hashCode()) % 2 == 0) ? "red" : "blue";
+                updateTeamLabel();
+                applyTeamBackground();
+                setupOnlinePresence();
+                setupButtons();
+                setupBottomNavigation();
+                fetchCourseInfo();
+                observeClassActiveState();
+                observeTeamCounts();
+                gameLoopHandler.post(gameLoopRunnable);
+                blinkHandler.post(blinkRunnable);
+                startBreathAnimation();
+            }
+        });
     }
 
     // === 底部导航栏 ===
@@ -359,19 +542,68 @@ public class ClassroomActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     String title = snapshot.child("title").getValue(String.class);
-                    String teacher = snapshot.child("teacher_name").getValue(String.class);
-                    if (teacher == null) teacher = snapshot.child("teacher_id").getValue(String.class);
                     if (title == null) title = "未命名课程";
-                    if (teacher == null) teacher = "未知讲师";
                     if (tvClassTitle != null) {
-                        String teamLabel = "red".equals(myTeam) ? "🟥 RED TEAM" : "🟦 BLUE TEAM";
-                        tvClassTitle.setText(title + "\n讲师: " + teacher + "  |  " + teamLabel);
+                        tvClassTitle.setText(title);
                     }
                 }
             }
             @Override
             public void onCancelled(DatabaseError error) {}
         });
+    }
+
+    private void updateTeamLabel() {
+        if (tvTeamLabel == null) return;
+        if ("red".equals(myTeam)) {
+            tvTeamLabel.setText("🟥 RED TEAM");
+            tvTeamLabel.setTextColor(Color.parseColor("#DC2626"));
+        } else {
+            tvTeamLabel.setText("🟦 BLUE TEAM");
+            tvTeamLabel.setTextColor(Color.parseColor("#2563EB"));
+        }
+    }
+
+    private void applyTeamBackground() {
+        if (classroomRoot == null) return;
+        int[] colors;
+        if ("red".equals(myTeam)) {
+            colors = new int[] {0xFFFFF1F2, 0xFFFECACA};
+        } else {
+            colors = new int[] {0xFFEFF6FF, 0xFFBFDBFE};
+        }
+        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
+        gradient.setCornerRadius(0f);
+        GradientDrawable glow = makeSoftGlow();
+        LayerDrawable layers = new LayerDrawable(new android.graphics.drawable.Drawable[]{gradient, glow});
+        classroomRoot.setBackground(layers);
+    }
+
+    private GradientDrawable makeSoftGlow() {
+        int start = 0x66FFFFFF;
+        int end = 0x00FFFFFF;
+        GradientDrawable glow = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{start, end});
+        glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+        glow.setGradientRadius(600f);
+        glow.setGradientCenter(0.2f, 0.1f);
+        return glow;
+    }
+
+    private void showLeaveConfirm() {
+        new AlertDialog.Builder(this)
+                .setTitle("教室を退出しますか？")
+                .setMessage("退出すると参加状態が解除されます。")
+                .setNegativeButton("キャンセル", null)
+                .setPositiveButton("退出", (d, w) -> leaveCourse())
+                .show();
+    }
+
+    private void leaveCourse() {
+        if (courseRef != null && myUserId != null) {
+            courseRef.child("active_students").child(myUserId).removeValue();
+            myMemberRef.child("online").removeValue();
+        }
+        finish();
     }
 
     private void handleFeedback(int impact) {

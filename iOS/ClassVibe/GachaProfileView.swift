@@ -28,6 +28,12 @@ struct GachaProfileView: View {
                 .padding()
             }
             .navigationTitle("成長プロフィール")
+            .toolbar {
+                NavigationLink(destination: SettingsView()) {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundColor(.gray)
+                }
+            }
             .onAppear(perform: loadGrowth)
             .overlay(titleLevelUpOverlay)
         }

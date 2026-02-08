@@ -13,11 +13,34 @@ struct ReactionPadView: View {
     @State private var isJoining = false
     @State private var previewCourseTitle: String = ""
     
-    var backgroundColor: Color {
+    var teamBackground: some View {
         switch viewModel.gameMode {
-        case .fever: return Color.purple.opacity(0.3)
-        case .battle: return viewModel.myTeam == .red ? Color.red.opacity(0.2) : Color.blue.opacity(0.2)
-        default: return Color.white
+        case .battle:
+            return AnyView(
+                ZStack {
+                    LinearGradient(
+                        gradient: Gradient(colors: viewModel.myTeam == .red
+                            ? [Color(red: 1.0, green: 0.94, blue: 0.94), Color(red: 1.0, green: 0.80, blue: 0.81)]
+                            : [Color(red: 0.94, green: 0.97, blue: 1.0), Color(red: 0.75, green: 0.86, blue: 0.99)]
+                        ),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .opacity(0.85)
+
+                    RadialGradient(
+                        gradient: Gradient(colors: [Color.white.opacity(0.75), Color.clear]),
+                        center: .topLeading,
+                        startRadius: 30,
+                        endRadius: 280
+                    )
+                    .opacity(0.4)
+                }
+            )
+        case .fever:
+            return AnyView(Color.purple.opacity(0.2))
+        default:
+            return AnyView(Color(.systemGroupedBackground))
         }
     }
     
@@ -101,7 +124,7 @@ struct ReactionPadView: View {
 
     private var classroomView: some View {
         ZStack {
-            backgroundColor.ignoresSafeArea()
+            teamBackground.ignoresSafeArea()
             if viewModel.gameMode == .fever {
                 LinearGradient(gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple]), startPoint: .topLeading, endPoint: .bottomTrailing)
                     .opacity(0.3).blendMode(.overlay).ignoresSafeArea()
@@ -112,8 +135,11 @@ struct ReactionPadView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(viewModel.currentCourseTitle.isEmpty ? "教室" : viewModel.currentCourseTitle)
                             .font(.headline).bold().foregroundColor(.primary)
-                        Text(viewModel.myTeam == .red ? "🟥 RED TEAM" : "🟦 BLUE TEAM")
-                            .font(.subheadline).bold()
+                        Text(viewModel.myTeam == .red ? "RED TEAM" : "BLUE TEAM")
+                            .font(.caption).bold()
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(viewModel.myTeam == .red ? Color.red.opacity(0.18) : Color.blue.opacity(0.18))
+                            .cornerRadius(10)
                             .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
                     }
                     Spacer()
