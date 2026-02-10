@@ -194,7 +194,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="質問"
+                            android:text="困惑"
                             android:textSize="11sp"
                             android:textColor="#6B7280"/>
                         <TextView

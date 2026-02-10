@@ -56,6 +56,7 @@ public class ProfileActivity extends AppCompatActivity {
     private static final String PREFS = "classvibe_prefs";
     private static final String KEY_LAST_NAME = "last_student_name";
     private static final String KEY_AVATAR_URI = "profile_avatar_uri";
+    private int currentLevel = 1;
 
     private DatabaseReference userRef;
     private ValueEventListener userListener;
@@ -113,6 +114,7 @@ public class ProfileActivity extends AppCompatActivity {
 
                 int exp = toInt(snapshot.child("growth").child("exp_total").getValue());
                 LevelInfo info = levelFromExp(exp);
+                currentLevel = info.level;
                 tvLevel.setText("Lv." + info.level);
                 tvPoints.setText("EXP " + info.currentInLevel + " / " + info.needForNext);
                 progressExp.setMax(info.needForNext);
@@ -270,14 +272,20 @@ public class ProfileActivity extends AppCompatActivity {
         return new LevelInfo(level, remaining, need);
     }
 
-    private void showBadgeDialog(String title, String condition, int imageRes) {
+    private void showBadgeDialog(String title, String condition, int imageRes, boolean unlocked) {
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.dialog_badge_detail, null);
         ImageView image = dialogView.findViewById(R.id.dialog_badge_image);
         TextView tvTitle = dialogView.findViewById(R.id.dialog_badge_title);
         TextView tvCondition = dialogView.findViewById(R.id.dialog_badge_condition);
 
-        image.setImageResource(imageRes);
+        if (unlocked) {
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setImageResource(imageRes);
+        } else {
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            image.setImageResource(R.drawable.ic_badge_unknown);
+        }
         tvTitle.setText(title);
         tvCondition.setText("獲得条件: " + condition);
 
@@ -323,9 +331,19 @@ public class ProfileActivity extends AppCompatActivity {
                 img.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 img.setImageResource(resId);
                 card.addView(img);
+            } else {
+                ImageView lock = new ImageView(this);
+                lock.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT
+                ));
+                lock.setScaleType(ImageView.ScaleType.CENTER);
+                lock.setImageResource(R.drawable.ic_badge_lock);
+                lock.setAlpha(0.7f);
+                card.addView(lock);
             }
 
-            card.setOnClickListener(v -> showBadgeDialog(meta.title, meta.condition, resId));
+            card.setOnClickListener(v -> showBadgeDialog(meta.title, meta.condition, resId, unlocked));
 
             gridBadgesBack.addView(card);
         }
@@ -370,68 +388,69 @@ public class ProfileActivity extends AppCompatActivity {
 
     private BadgeMeta badgeMetaFor(String id) {
         switch (id) {
-            case "badge_01": return new BadgeMeta("協力の見習い", "協力系の成長ポイントが1以上");
-            case "badge_02": return new BadgeMeta("インタラクション加速者", "参加系の成長ポイントが3以上");
-            case "badge_03": return new BadgeMeta("クラス守護バリア", "安定系の成長ポイントが10以上");
-            case "badge_04": return new BadgeMeta("クラス連結コア", "協力系の成長ポイントが15以上");
-            case "badge_05": return new BadgeMeta("ソクラテスの眼", "質問系の成長ポイントが15以上");
-            case "badge_06": return new BadgeMeta("チームエンジン", "協力系の成長ポイントが6以上");
-            case "badge_07": return new BadgeMeta("ヒントハンター", "質問系の成長ポイントが3以上");
-            case "badge_08": return new BadgeMeta("ムード点火師", "参加系の成長ポイントが6以上");
-            case "badge_09": return new BadgeMeta("リズムウォッチャー", "安定系の成長ポイントが3以上");
-            case "badge_10": return new BadgeMeta("不動のガーディアン", "安定系の成長ポイントが15以上");
-            case "badge_11": return new BadgeMeta("五角形レジェンド", "全ての成長ポイントが10以上");
-            case "badge_12": return new BadgeMeta("全体ビートメーカー", "参加系の成長ポイントが20以上");
-            case "badge_13": return new BadgeMeta("共創キャプテン", "協力系の成長ポイントが10以上");
-            case "badge_14": return new BadgeMeta("参加の見習い", "参加系の成長ポイントが1以上");
-            case "badge_15": return new BadgeMeta("安定の見習い", "安定系の成長ポイントが1以上");
-            case "badge_16": return new BadgeMeta("対話イグナイター", "質問系の成長ポイントが6以上");
-            case "badge_17": return new BadgeMeta("思考ダブルコア", "理解系と質問系の成長ポイントが10以上");
-            case "badge_18": return new BadgeMeta("思考ナビゲーター", "理解系の成長ポイントが10以上");
-            case "badge_19": return new BadgeMeta("授業プッシャー", "参加系の成長ポイントが10以上");
-            case "badge_20": return new BadgeMeta("洞察チェイサー", "質問系の成長ポイントが10以上");
-            case "badge_21": return new BadgeMeta("熱量スター", "参加系の成長ポイントが15以上");
-            case "badge_22": return new BadgeMeta("理解の見習い", "理解系の成長ポイントが1以上");
-            case "badge_23": return new BadgeMeta("真理トラッカー", "理解系の成長ポイントが15以上");
-            case "badge_24": return new BadgeMeta("知識クラフター", "理解系の成長ポイントが6以上");
-            case "badge_25": return new BadgeMeta("秩序リペアラー", "安定系の成長ポイントが6以上");
-            case "badge_26": return new BadgeMeta("紅青コーディネーター", "協力系の成長ポイントが3以上");
-            case "badge_27": return new BadgeMeta("解法トラベラー", "理解系の成長ポイントが3以上");
-            case "badge_28": return new BadgeMeta("質問の見習い", "質問系の成長ポイントが1以上");
+            case "badge_01": return new BadgeMeta("協力の見習い", "協力系の成長ポイントが5以上");
+            case "badge_02": return new BadgeMeta("インタラクション加速者", "参加系の成長ポイントが15以上（Lv6以上）");
+            case "badge_03": return new BadgeMeta("クラス守護バリア", "安定系の成長ポイントが40以上（Lv10以上）");
+            case "badge_04": return new BadgeMeta("クラス連結コア", "協力系の成長ポイントが60以上（Lv10以上）");
+            case "badge_05": return new BadgeMeta("ソクラテスの眼", "困惑系の成長ポイントが50以上（Lv10以上）");
+            case "badge_06": return new BadgeMeta("チームエンジン", "協力系の成長ポイントが25以上（Lv6以上）");
+            case "badge_07": return new BadgeMeta("ヒントハンター", "困惑系の成長ポイントが10以上（Lv6以上）");
+            case "badge_08": return new BadgeMeta("ムード点火師", "参加系の成長ポイントが30以上（Lv6以上）");
+            case "badge_09": return new BadgeMeta("リズムウォッチャー", "安定系の成長ポイントが12以上（Lv6以上）");
+            case "badge_10": return new BadgeMeta("不動のガーディアン", "安定系の成長ポイントが60以上（Lv10以上）");
+            case "badge_11": return new BadgeMeta("五角形レジェンド", "全ての成長ポイントが30以上（Lv14以上）");
+            case "badge_12": return new BadgeMeta("全体ビートメーカー", "参加系の成長ポイントが90以上（Lv14以上）");
+            case "badge_13": return new BadgeMeta("共創キャプテン", "協力系の成長ポイントが40以上（Lv10以上）");
+            case "badge_14": return new BadgeMeta("参加の見習い", "参加系の成長ポイントが5以上");
+            case "badge_15": return new BadgeMeta("安定の見習い", "安定系の成長ポイントが5以上");
+            case "badge_16": return new BadgeMeta("対話イグナイター", "困惑系の成長ポイントが20以上（Lv6以上）");
+            case "badge_17": return new BadgeMeta("思考ダブルコア", "理解系と困惑系の成長ポイントが40/35以上（Lv14以上）");
+            case "badge_18": return new BadgeMeta("思考ナビゲーター", "理解系の成長ポイントが40以上（Lv10以上）");
+            case "badge_19": return new BadgeMeta("授業プッシャー", "参加系の成長ポイントが50以上（Lv10以上）");
+            case "badge_20": return new BadgeMeta("洞察チェイサー", "困惑系の成長ポイントが35以上（Lv10以上）");
+            case "badge_21": return new BadgeMeta("熱量スター", "参加系の成長ポイントが70以上（Lv10以上）");
+            case "badge_22": return new BadgeMeta("理解の見習い", "理解系の成長ポイントが5以上");
+            case "badge_23": return new BadgeMeta("真理トラッカー", "理解系の成長ポイントが60以上（Lv10以上）");
+            case "badge_24": return new BadgeMeta("知識クラフター", "理解系の成長ポイントが25以上（Lv6以上）");
+            case "badge_25": return new BadgeMeta("秩序リペアラー", "安定系の成長ポイントが25以上（Lv6以上）");
+            case "badge_26": return new BadgeMeta("紅青コーディネーター", "協力系の成長ポイントが12以上（Lv6以上）");
+            case "badge_27": return new BadgeMeta("解法トラベラー", "理解系の成長ポイントが12以上（Lv6以上）");
+            case "badge_28": return new BadgeMeta("質問の見習い", "困惑系の成長ポイントが4以上");
             default: return new BadgeMeta("バッジ", "条件データ準備中");
         }
     }
 
     private boolean isBadgeUnlocked(String id, int understand, int question, int collab, int engagement, int stability) {
+        int level = currentLevel;
         switch (id) {
-            case "badge_01": return collab >= 1;
-            case "badge_02": return engagement >= 3;
-            case "badge_03": return stability >= 10;
-            case "badge_04": return collab >= 15;
-            case "badge_05": return question >= 15;
-            case "badge_06": return collab >= 6;
-            case "badge_07": return question >= 3;
-            case "badge_08": return engagement >= 6;
-            case "badge_09": return stability >= 3;
-            case "badge_10": return stability >= 15;
-            case "badge_11": return understand >= 10 && question >= 10 && collab >= 10 && engagement >= 10 && stability >= 10;
-            case "badge_12": return engagement >= 20;
-            case "badge_13": return collab >= 10;
-            case "badge_14": return engagement >= 1;
-            case "badge_15": return stability >= 1;
-            case "badge_16": return question >= 6;
-            case "badge_17": return understand >= 10 && question >= 10;
-            case "badge_18": return understand >= 10;
-            case "badge_19": return engagement >= 10;
-            case "badge_20": return question >= 10;
-            case "badge_21": return engagement >= 15;
-            case "badge_22": return understand >= 1;
-            case "badge_23": return understand >= 15;
-            case "badge_24": return understand >= 6;
-            case "badge_25": return stability >= 6;
-            case "badge_26": return collab >= 3;
-            case "badge_27": return understand >= 3;
-            case "badge_28": return question >= 1;
+            case "badge_01": return collab >= 5;
+            case "badge_02": return engagement >= 15 && level >= 6;
+            case "badge_03": return stability >= 40 && level >= 10;
+            case "badge_04": return collab >= 60 && level >= 10;
+            case "badge_05": return question >= 50 && level >= 10;
+            case "badge_06": return collab >= 25 && level >= 6;
+            case "badge_07": return question >= 10 && level >= 6;
+            case "badge_08": return engagement >= 30 && level >= 6;
+            case "badge_09": return stability >= 12 && level >= 6;
+            case "badge_10": return stability >= 60 && level >= 10;
+            case "badge_11": return understand >= 30 && question >= 30 && collab >= 30 && engagement >= 30 && stability >= 30 && level >= 14;
+            case "badge_12": return engagement >= 90 && level >= 14;
+            case "badge_13": return collab >= 40 && level >= 10;
+            case "badge_14": return engagement >= 5;
+            case "badge_15": return stability >= 5;
+            case "badge_16": return question >= 20 && level >= 6;
+            case "badge_17": return understand >= 40 && question >= 35 && level >= 14;
+            case "badge_18": return understand >= 40 && level >= 10;
+            case "badge_19": return engagement >= 50 && level >= 10;
+            case "badge_20": return question >= 35 && level >= 10;
+            case "badge_21": return engagement >= 70 && level >= 10;
+            case "badge_22": return understand >= 5;
+            case "badge_23": return understand >= 60 && level >= 10;
+            case "badge_24": return understand >= 25 && level >= 6;
+            case "badge_25": return stability >= 25 && level >= 6;
+            case "badge_26": return collab >= 12 && level >= 6;
+            case "badge_27": return understand >= 12 && level >= 6;
+            case "badge_28": return question >= 4;
             default: return false;
         }
     }

@@ -110,16 +110,31 @@
         const provider = new firebase.auth.GoogleAuthProvider();
 
         // 保持账号会话，避免每次都强制重新选账号
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((err) => {
+            console.warn("setPersistence failed:", err);
+        });
 
         // ==========================================
         // 2. Google ログイン処理
         // ==========================================
         function handleGoogleLogin() {
             const statusEl = document.getElementById('login-status');
-            statusEl.innerText = "Googleに接続中...";
-            statusEl.className = "text-center text-sm font-medium text-blue-600 h-6"; 
+            statusEl.innerText = "準備中...";
+            statusEl.className = "text-center text-sm font-medium text-blue-600 h-6";
 
-            auth.signInWithPopup(provider)
+            // すでにログイン済みなら、そのまま遷移（確認画面なし）
+            if (auth.currentUser) {
+                statusEl.innerText = "ログイン済みです。移動します...";
+                statusEl.className = "text-center text-sm font-medium text-green-600 h-6";
+                window.location.href = "teacherbackground.php";
+                return;
+            }
+
+            statusEl.innerText = "Googleに接続中...";
+            statusEl.className = "text-center text-sm font-medium text-blue-600 h-6";
+
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => auth.signInWithPopup(provider))
                 .then((result) => {
                     const user = result.user;
                     console.log("ログイン成功:", user.displayName);
@@ -165,12 +180,7 @@
             });
         }
         
-        // 既にログイン済みなら自動遷移（オプション）
-        // auth.onAuthStateChanged((user) => {
-        //     if (user) {
-        //         window.location.href = "teacherbackground.php";
-        //     }
-        // });
+        // 自動遷移はしない（ボタン押下時のみ遷移）
     </script>
 </body>
 </html>

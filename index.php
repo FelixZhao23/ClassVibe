@@ -52,7 +52,6 @@
                 <div>
                     <div class="flex items-baseline gap-2">
                         <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">接続中...</h1>
-                        <span class="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded" id="course-time">-- : --</span>
                     </div>
                     <!-- ✨ 参加コード表示 -->
                     <div class="flex items-center gap-2 mt-1">
@@ -410,7 +409,6 @@
                 }
                 
                 document.getElementById('course-title').innerText = data.title;
-                document.getElementById('course-time').innerText = data.time || "--";
                 const code = data.simple_code || "----";
                 document.getElementById('join-code').innerText = code;
                 document.getElementById('modal-code').innerText = code;
@@ -851,23 +849,23 @@
                 { id: "low_understand_03", text: "一つずつ分解すれば、道は見える。" },
                 { id: "low_understand_04", text: "今は霧でも、少しずつ晴れる。" },
                 { id: "low_understand_05", text: "迷いは成長の証。立ち止まってOK。" },
-                { id: "low_understand_06", text: "難しいと感じたら、質問が光になる。" },
+                { id: "low_understand_06", text: "難しいと感じたら、困惑の合図が光になる。" },
                 { id: "low_understand_07", text: "ゆっくりでいい、確実に前へ。" },
                 { id: "low_understand_08", text: "わからないを言える強さがある。" },
                 { id: "low_understand_09", text: "今日の混乱は、明日の理解へ繋がる。" },
                 { id: "low_understand_10", text: "難所に出会えたのは、成長の前兆。" }
             ],
-            high_question: [
-                { id: "high_question_01", text: "良い質問は、良い理解を連れてくる。" },
-                { id: "high_question_02", text: "問いがある人は、学びが深くなる。" },
-                { id: "high_question_03", text: "疑問は前進のエンジン。" },
-                { id: "high_question_04", text: "質問は勇気。今日の君は強い。" },
-                { id: "high_question_05", text: "問いを立てる力が、答えを導く。" },
-                { id: "high_question_06", text: "質問が教室の質を上げる。" },
-                { id: "high_question_07", text: "「なぜ？」は理解の入口。" },
-                { id: "high_question_08", text: "疑問を言葉にする、それが成長。" },
-                { id: "high_question_09", text: "問いの数だけ、視野が広がる。" },
-                { id: "high_question_10", text: "質問は未来への投資だ。" }
+            high_confusion: [
+                { id: "high_confusion_01", text: "困惑は、理解に向かうサイン。" },
+                { id: "high_confusion_02", text: "迷いがあるほど、次の成長は深い。" },
+                { id: "high_confusion_03", text: "引っかかりは、大事な気づきの入口。" },
+                { id: "high_confusion_04", text: "迷いを出せるのは前進の証。" },
+                { id: "high_confusion_05", text: "わからないが見えるほど、理解は近い。" },
+                { id: "high_confusion_06", text: "違和感を拾える人は強い。" },
+                { id: "high_confusion_07", text: "困惑は、学びの方向修正だ。" },
+                { id: "high_confusion_08", text: "迷った分だけ、次は確かになる。" },
+                { id: "high_confusion_09", text: "引っかかりを放置しない姿勢が素敵。" },
+                { id: "high_confusion_10", text: "困惑を言葉にできた時、理解が進む。" }
             ],
             stable: [
                 { id: "stable_01", text: "安定した歩みが、一番遠くへ行く。" },
@@ -889,7 +887,7 @@
             const question = toSafeNumber(metric.question_count);
             const confused = toSafeNumber(metric.confused_count);
             if (understood >= 3 && effective >= 6) return "high_understand";
-            if (question >= 2) return "high_question";
+            if (question >= 2) return "high_confusion";
             if (effective >= 8) return "high_engagement";
             if (confused >= 2) return "low_understand";
             if (effective <= 1) return "low_engagement";
@@ -912,6 +910,60 @@
             const picked = available[0];
             nextHistory[picked.id] = true;
             return { id: picked.id, text: picked.text, history: nextHistory };
+        }
+
+        function parseLocalDateTime(value) {
+            if (!value) return null;
+            const parts = String(value).replace('T', ' ').split(' ');
+            const datePart = parts[0] || '';
+            const timePart = parts[1] || '00:00:00';
+            const [y, m, d] = datePart.split('-').map(v => parseInt(v, 10));
+            const [hh, mm, ss] = timePart.split(':').map(v => parseInt(v, 10));
+            if (!y || !m || !d) return null;
+            return new Date(y, (m - 1), d, hh || 0, mm || 0, ss || 0);
+        }
+
+        function formatDateWithWeekday(dateObj) {
+            if (!dateObj) return '';
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const w = days[dateObj.getDay()];
+            return `${y}/${m}/${d}(${w})`;
+        }
+
+        function toMinutes(dateObj) {
+            if (!dateObj) return 0;
+            return dateObj.getHours() * 60 + dateObj.getMinutes();
+        }
+
+        function getPeriods(startMin, endMin) {
+            const slots = [
+                { label: '1限', start: 9 * 60 + 20, end: 10 * 60 + 50 },
+                { label: '2限', start: 11 * 60 + 0, end: 12 * 60 + 30 },
+                { label: '3限', start: 13 * 60 + 20, end: 14 * 60 + 50 },
+                { label: '4限', start: 15 * 60 + 0, end: 16 * 60 + 30 },
+                { label: '5限', start: 16 * 60 + 40, end: 18 * 60 + 10 },
+                { label: '6限', start: 18 * 60 + 20, end: 19 * 60 + 50 }
+            ];
+            const s = Math.max(0, startMin);
+            const e = Math.max(s, endMin);
+            const result = [];
+            for (const slot of slots) {
+                const overlap = Math.min(e, slot.end) - Math.max(s, slot.start);
+                if (overlap > 0) result.push(slot.label);
+            }
+            return result.length ? result.join('・') : '時間外';
+        }
+
+        function buildLogSummary(startTime, endTime, metric, subjectText) {
+            const start = parseLocalDateTime(startTime);
+            const dateStr = formatDateWithWeekday(start);
+            const effective = toSafeNumber(metric.effective_interactions).toFixed(1);
+            const question = toSafeNumber(metric.question_count);
+            const subject = subjectText ? ` ${subjectText}` : '';
+            return `${dateStr}${subject} / 有効反応 ${effective} / 困惑 ${question}回`;
         }
 
         function calculateGrowthAward(metric, battleWinner, hpResult) {
@@ -939,7 +991,7 @@
             return { exp, gains };
         }
 
-        async function applyGrowthSettlement(sessionId, battleWinner, hpResult) {
+        async function applyGrowthSettlement(sessionId, battleWinner, hpResult, sessionStart, sessionEnd) {
             const metricsSnap = await db.ref(`courses/${COURSE_ID}/student_metrics`).once('value');
             const metrics = metricsSnap.val() || {};
             const entries = Object.entries(metrics);
@@ -1002,12 +1054,14 @@
                     }
                 });
 
+                const subjectText = courseInfo?.title || sessionTopic || '通常授業';
+                const logSummary = buildLogSummary(sessionStart, sessionEnd, metric, subjectText);
                 await logRef.set({
                     created_at: Date.now(),
                     exp_gain: award.exp,
                     gains: award.gains,
-                    summary: `有効互动 ${toSafeNumber(metric.effective_interactions).toFixed(1)} / 提問 ${toSafeNumber(metric.question_count)} 回`,
-                    next_hint: "次回は質問を1回増やして称号を強化しよう",
+                    summary: logSummary,
+                    next_hint: "次回は困惑の合図を1回増やして称号を強化しよう",
                     message: messageText,
                     message_id: messageId,
                     message_category: category
@@ -1073,7 +1127,7 @@
             try {
                 const sessionRef = db.ref('class_sessions').push();
                 await sessionRef.set(sessionData);
-                const settlementResult = await applyGrowthSettlement(sessionRef.key, battleWinner, hpResult);
+                const settlementResult = await applyGrowthSettlement(sessionRef.key, battleWinner, hpResult, sessionStartTime, endTime);
                 
                 db.ref(`courses/${COURSE_ID}/reactions`).set({ 
                     happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 

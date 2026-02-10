@@ -564,7 +564,7 @@ class StudentViewModel: ObservableObject {
         var confused = 0
 
         if dbKey == "happy" || dbKey == "amazing" { understood = 1 }
-        if dbKey == "question" { question = 1 }
+        if dbKey == "confused" || dbKey == "question" || dbKey == "amazing" { question = 1 }
         if dbKey == "confused" || dbKey == "sleepy" || dbKey == "bored" { confused = 1 }
 
         let teamContribution = teamContributionWeight(teamStr: teamStr, base: weight)

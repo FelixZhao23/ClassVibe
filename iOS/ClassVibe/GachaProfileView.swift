@@ -126,7 +126,7 @@ struct GachaProfileView: View {
             VStack(spacing: 10) {
                 HStack {
                     statCard("理解", "\(dims["understand", default: 0])", .green)
-                    statCard("質問", "\(dims["question", default: 0])", .blue)
+                    statCard("困惑", "\(dims["question", default: 0])", .blue)
                     statCard("協力", "\(dims["collab", default: 0])", .purple)
                 }
                 HStack {
@@ -231,7 +231,7 @@ struct GachaProfileView: View {
         VStack(spacing: 10) {
             HStack {
                 statCard("理解", "\(dims["understand", default: 0])", .green)
-                statCard("質問", "\(dims["question", default: 0])", .blue)
+                statCard("困惑", "\(dims["question", default: 0])", .blue)
                 statCard("協力", "\(dims["collab", default: 0])", .purple)
             }
             HStack {
@@ -381,7 +381,12 @@ struct GachaProfileView: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Circle().fill(Color.gray.opacity(0.25))
+                ZStack {
+                    Circle().fill(Color.gray.opacity(0.25))
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.gray.opacity(0.6))
+                }
             }
         }
         .frame(width: 64, height: 64)
@@ -408,34 +413,34 @@ struct GachaProfileView: View {
 
     private func badgeMetaFor(_ id: String) -> (title: String, condition: String) {
         switch id {
-        case "badge_01": return ("協力の見習い", "協力系の成長ポイントが1以上")
-        case "badge_02": return ("インタラクション加速者", "参加系の成長ポイントが3以上")
-        case "badge_03": return ("クラス守護バリア", "安定系の成長ポイントが10以上")
-        case "badge_04": return ("クラス連結コア", "協力系の成長ポイントが15以上")
-        case "badge_05": return ("ソクラテスの眼", "質問系の成長ポイントが15以上")
-        case "badge_06": return ("チームエンジン", "協力系の成長ポイントが6以上")
-        case "badge_07": return ("ヒントハンター", "質問系の成長ポイントが3以上")
-        case "badge_08": return ("ムード点火師", "参加系の成長ポイントが6以上")
-        case "badge_09": return ("リズムウォッチャー", "安定系の成長ポイントが3以上")
-        case "badge_10": return ("不動のガーディアン", "安定系の成長ポイントが15以上")
-        case "badge_11": return ("五角形レジェンド", "全ての成長ポイントが10以上")
-        case "badge_12": return ("全体ビートメーカー", "参加系の成長ポイントが20以上")
-        case "badge_13": return ("共創キャプテン", "協力系の成長ポイントが10以上")
-        case "badge_14": return ("参加の見習い", "参加系の成長ポイントが1以上")
-        case "badge_15": return ("安定の見習い", "安定系の成長ポイントが1以上")
-        case "badge_16": return ("対話イグナイター", "質問系の成長ポイントが6以上")
-        case "badge_17": return ("思考ダブルコア", "理解系と質問系の成長ポイントが10以上")
-        case "badge_18": return ("思考ナビゲーター", "理解系の成長ポイントが10以上")
-        case "badge_19": return ("授業プッシャー", "参加系の成長ポイントが10以上")
-        case "badge_20": return ("洞察チェイサー", "質問系の成長ポイントが10以上")
-        case "badge_21": return ("熱量スター", "参加系の成長ポイントが15以上")
-        case "badge_22": return ("理解の見習い", "理解系の成長ポイントが1以上")
-        case "badge_23": return ("真理トラッカー", "理解系の成長ポイントが15以上")
-        case "badge_24": return ("知識クラフター", "理解系の成長ポイントが6以上")
-        case "badge_25": return ("秩序リペアラー", "安定系の成長ポイントが6以上")
-        case "badge_26": return ("紅青コーディネーター", "協力系の成長ポイントが3以上")
-        case "badge_27": return ("解法トラベラー", "理解系の成長ポイントが3以上")
-        case "badge_28": return ("質問の見習い", "質問系の成長ポイントが1以上")
+        case "badge_01": return ("協力の見習い", "協力系の成長ポイントが5以上")
+        case "badge_02": return ("インタラクション加速者", "参加系の成長ポイントが15以上（Lv6以上）")
+        case "badge_03": return ("クラス守護バリア", "安定系の成長ポイントが40以上（Lv10以上）")
+        case "badge_04": return ("クラス連結コア", "協力系の成長ポイントが60以上（Lv10以上）")
+        case "badge_05": return ("ソクラテスの眼", "困惑系の成長ポイントが50以上（Lv10以上）")
+        case "badge_06": return ("チームエンジン", "協力系の成長ポイントが25以上（Lv6以上）")
+        case "badge_07": return ("ヒントハンター", "困惑系の成長ポイントが10以上（Lv6以上）")
+        case "badge_08": return ("ムード点火師", "参加系の成長ポイントが30以上（Lv6以上）")
+        case "badge_09": return ("リズムウォッチャー", "安定系の成長ポイントが12以上（Lv6以上）")
+        case "badge_10": return ("不動のガーディアン", "安定系の成長ポイントが60以上（Lv10以上）")
+        case "badge_11": return ("五角形レジェンド", "全ての成長ポイントが30以上（Lv14以上）")
+        case "badge_12": return ("全体ビートメーカー", "参加系の成長ポイントが90以上（Lv14以上）")
+        case "badge_13": return ("共創キャプテン", "協力系の成長ポイントが40以上（Lv10以上）")
+        case "badge_14": return ("参加の見習い", "参加系の成長ポイントが5以上")
+        case "badge_15": return ("安定の見習い", "安定系の成長ポイントが5以上")
+        case "badge_16": return ("対話イグナイター", "困惑系の成長ポイントが20以上（Lv6以上）")
+        case "badge_17": return ("思考ダブルコア", "理解系と困惑系の成長ポイントが40/35以上（Lv14以上）")
+        case "badge_18": return ("思考ナビゲーター", "理解系の成長ポイントが40以上（Lv10以上）")
+        case "badge_19": return ("授業プッシャー", "参加系の成長ポイントが50以上（Lv10以上）")
+        case "badge_20": return ("洞察チェイサー", "困惑系の成長ポイントが35以上（Lv10以上）")
+        case "badge_21": return ("熱量スター", "参加系の成長ポイントが70以上（Lv10以上）")
+        case "badge_22": return ("理解の見習い", "理解系の成長ポイントが5以上")
+        case "badge_23": return ("真理トラッカー", "理解系の成長ポイントが60以上（Lv10以上）")
+        case "badge_24": return ("知識クラフター", "理解系の成長ポイントが25以上（Lv6以上）")
+        case "badge_25": return ("秩序リペアラー", "安定系の成長ポイントが25以上（Lv6以上）")
+        case "badge_26": return ("紅青コーディネーター", "協力系の成長ポイントが12以上（Lv6以上）")
+        case "badge_27": return ("解法トラベラー", "理解系の成長ポイントが12以上（Lv6以上）")
+        case "badge_28": return ("質問の見習い", "困惑系の成長ポイントが4以上")
         default: return ("バッジ", "条件データ準備中")
         }
     }
@@ -446,35 +451,36 @@ struct GachaProfileView: View {
         let collab = dims["collab", default: 0]
         let engagement = dims["engagement", default: 0]
         let stability = dims["stability", default: 0]
+        let level = levelInfo(from: expTotal).level
         switch id {
-        case "badge_01": return collab >= 1
-        case "badge_02": return engagement >= 3
-        case "badge_03": return stability >= 10
-        case "badge_04": return collab >= 15
-        case "badge_05": return question >= 15
-        case "badge_06": return collab >= 6
-        case "badge_07": return question >= 3
-        case "badge_08": return engagement >= 6
-        case "badge_09": return stability >= 3
-        case "badge_10": return stability >= 15
-        case "badge_11": return understand >= 10 && question >= 10 && collab >= 10 && engagement >= 10 && stability >= 10
-        case "badge_12": return engagement >= 20
-        case "badge_13": return collab >= 10
-        case "badge_14": return engagement >= 1
-        case "badge_15": return stability >= 1
-        case "badge_16": return question >= 6
-        case "badge_17": return understand >= 10 && question >= 10
-        case "badge_18": return understand >= 10
-        case "badge_19": return engagement >= 10
-        case "badge_20": return question >= 10
-        case "badge_21": return engagement >= 15
-        case "badge_22": return understand >= 1
-        case "badge_23": return understand >= 15
-        case "badge_24": return understand >= 6
-        case "badge_25": return stability >= 6
-        case "badge_26": return collab >= 3
-        case "badge_27": return understand >= 3
-        case "badge_28": return question >= 1
+        case "badge_01": return collab >= 5
+        case "badge_02": return engagement >= 15 && level >= 6
+        case "badge_03": return stability >= 40 && level >= 10
+        case "badge_04": return collab >= 60 && level >= 10
+        case "badge_05": return question >= 50 && level >= 10
+        case "badge_06": return collab >= 25 && level >= 6
+        case "badge_07": return question >= 10 && level >= 6
+        case "badge_08": return engagement >= 30 && level >= 6
+        case "badge_09": return stability >= 12 && level >= 6
+        case "badge_10": return stability >= 60 && level >= 10
+        case "badge_11": return understand >= 30 && question >= 30 && collab >= 30 && engagement >= 30 && stability >= 30 && level >= 14
+        case "badge_12": return engagement >= 90 && level >= 14
+        case "badge_13": return collab >= 40 && level >= 10
+        case "badge_14": return engagement >= 5
+        case "badge_15": return stability >= 5
+        case "badge_16": return question >= 20 && level >= 6
+        case "badge_17": return understand >= 40 && question >= 35 && level >= 14
+        case "badge_18": return understand >= 40 && level >= 10
+        case "badge_19": return engagement >= 50 && level >= 10
+        case "badge_20": return question >= 35 && level >= 10
+        case "badge_21": return engagement >= 70 && level >= 10
+        case "badge_22": return understand >= 5
+        case "badge_23": return understand >= 60 && level >= 10
+        case "badge_24": return understand >= 25 && level >= 6
+        case "badge_25": return stability >= 25 && level >= 6
+        case "badge_26": return collab >= 12 && level >= 6
+        case "badge_27": return understand >= 12 && level >= 6
+        case "badge_28": return question >= 4
         default: return false
         }
     }
@@ -499,7 +505,12 @@ struct GachaProfileView: View {
                                     .resizable()
                                     .scaledToFill()
                             } else {
-                                Circle().fill(Color.gray.opacity(0.25))
+                                ZStack {
+                                    Circle().fill(Color.gray.opacity(0.25))
+                                    Image(systemName: "questionmark")
+                                        .font(.system(size: 36, weight: .semibold))
+                                        .foregroundColor(.gray.opacity(0.6))
+                                }
                             }
                         }
                         .frame(width: 180, height: 180)

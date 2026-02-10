@@ -78,47 +78,21 @@
                     <input type="text" id="input-title" placeholder="例：Javaプログラミング" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- 2. 実施年度 (プルダウン x 2) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">実施年度</label>
-                        <div class="flex gap-2">
-                            <!-- 年度 -->
-                            <select id="input-year-val" class="w-2/3 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                                <!-- JSで動的に生成します -->
-                            </select>
-                            <!-- 学期 -->
-                            <select id="input-term-val" class="w-1/3 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                                <option value="前期">前期</option>
-                                <option value="後期">後期</option>
-                                <option value="通年">通年</option>
-                                <option value="その他">その他</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- 3. 時間割 (プルダウン x 2) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">時間割</label>
-                        <div class="flex items-center gap-1">
-                            <select id="input-period-start" class="w-1/2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                                <option value="1限">1限</option>
-                                <option value="2限">2限</option>
-                                <option value="3限">3限</option>
-                                <option value="4限">4限</option>
-                                <option value="5限">5限</option>
-                                <option value="6限">6限</option>
-                            </select>
-                            <span class="text-gray-400">〜</span>
-                            <select id="input-period-end" class="w-1/2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                                <option value="1限">1限</option>
-                                <option value="2限">2限</option>
-                                <option value="3限">3限</option>
-                                <option value="4限">4限</option>
-                                <option value="5限">5限</option>
-                                <option value="6限">6限</option>
-                            </select>
-                        </div>
+                <!-- 2. 実施年度 (プルダウン x 2) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">実施年度</label>
+                    <div class="flex gap-2">
+                        <!-- 年度 -->
+                        <select id="input-year-val" class="w-2/3 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                            <!-- JSで動的に生成します -->
+                        </select>
+                        <!-- 学期 -->
+                        <select id="input-term-val" class="w-1/3 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                            <option value="前期">前期</option>
+                            <option value="後期">後期</option>
+                            <option value="通年">通年</option>
+                            <option value="その他">その他</option>
+                        </select>
                     </div>
                 </div>
 
@@ -241,10 +215,14 @@
             const randomGradient = gradients[colorIndex];
             
             const simpleCode = course.simple_code ? `参加コード: ${course.simple_code}` : 'コードなし';
+            const isActive = !!course.is_active;
+            const statusLabel = isActive ? '授業中' : '未開始';
+            const statusClass = isActive
+                ? 'bg-green-100 text-green-700 border-green-200'
+                : 'bg-gray-100 text-gray-600 border-gray-200';
             
-            // dateフィールドに「年度」、timeフィールドに「時間割」が入っています
+            // dateフィールドに「年度」が入っています
             const yearInfo = course.date || '年度未設定';
-            const periodInfo = course.time || '時間未設定';
 
             return `
             <div class="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all card-hover overflow-hidden flex flex-col h-48 relative group animate-fade-in">
@@ -256,22 +234,17 @@
                         <i class="fas fa-trash-alt"></i>
                     </button>
 
-                    <div class="flex justify-between items-start mb-2 pr-8">
+                    <div class="flex justify-between items-start mb-3 pr-8">
                         <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-mono">${yearInfo}</span>
-                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">${simpleCode}</span>
+                        <span class="text-[11px] font-bold px-2 py-1 rounded border ${statusClass}">${statusLabel}</span>
                     </div>
+
+                    <h3 class="text-2xl font-black text-gray-800 mb-2 truncate" title="${course.title}">${course.title}</h3>
+                    <div class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 inline-block w-fit">${simpleCode}</div>
                     
-                    <h3 class="text-xl font-bold text-gray-800 mb-1 truncate" title="${course.title}">${course.title}</h3>
-                    <p class="text-sm text-gray-500 flex items-center gap-2"><i class="far fa-clock"></i> ${periodInfo}</p>
-                    
-                    <div class="mt-auto pt-4 flex justify-between items-center">
-                        <div class="flex -space-x-2 overflow-hidden">
-                            <div class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-200"></div>
-                            <div class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-300"></div>
-                            <div class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-[10px] text-gray-500">+</div>
-                        </div>
+                    <div class="mt-auto pt-4 flex justify-end items-center">
                         <a href="index.php?courseId=${course.id}" 
-                           class="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                           class="opacity-0 translate-y-1 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all">
                            入室する <i class="fas fa-arrow-right ml-1"></i>
                         </a>
                     </div>
@@ -292,16 +265,6 @@
             const yearVal = document.getElementById('input-year-val').value;
             const termVal = document.getElementById('input-term-val').value;
             const fullYearString = `${yearVal}年度 ${termVal}`; 
-
-            // 時間割の値を取得して結合
-            const periodStart = document.getElementById('input-period-start').value;
-            const periodEnd = document.getElementById('input-period-end').value;
-            let periodString = periodStart;
-            
-            // 開始と終了が違う場合のみ「〜」でつなぐ（例：1限〜2限）
-            if (periodStart !== periodEnd) {
-                periodString = `${periodStart}〜${periodEnd}`;
-            }
             
             // 4桁の参加コードを生成
             const simpleCode = await generateUniqueCode();
@@ -312,7 +275,6 @@
             const newCourseData = {
                 title: title,
                 date: fullYearString, // 例: 2025年度 前期
-                time: periodString,   // 例: 1限〜2限
                 teacher_id: CURRENT_TEACHER_ID,
                 simple_code: simpleCode,
                 is_active: false,
@@ -371,6 +333,8 @@
             panel.classList.add('scale-95', 'opacity-0');
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
+
+
     </script>
 </body>
 </html>

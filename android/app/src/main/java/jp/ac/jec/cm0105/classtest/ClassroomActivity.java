@@ -399,7 +399,7 @@ public class ClassroomActivity extends AppCompatActivity {
         DatabaseReference metricsRef = courseRef.child("student_metrics").child(myUserId);
 
         int understood = ("happy".equals(metricKey) || "amazing".equals(metricKey)) ? 1 : 0;
-        int question = "question".equals(metricKey) ? 1 : 0;
+        int question = ("confused".equals(metricKey) || "question".equals(metricKey) || "amazing".equals(metricKey)) ? 1 : 0;
         int confused = ("confused".equals(metricKey) || "sleepy".equals(metricKey) || "bored".equals(metricKey)) ? 1 : 0;
         double teamContribution = computeTeamContribution(weight);
 
