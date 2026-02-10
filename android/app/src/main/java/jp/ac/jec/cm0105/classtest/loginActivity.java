@@ -114,6 +114,9 @@ public class loginActivity extends AppCompatActivity {
     // Google 登录相关
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 100;
+    private static final String PREFS = "classvibe_prefs";
+    private static final String KEY_LAST_NAME = "last_student_name";
+    private static final String KEY_LOGIN_LABEL = "login_method_label";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,8 +134,15 @@ public class loginActivity extends AppCompatActivity {
 
         GoogleSignInAccount lastAccount = GoogleSignIn.getLastSignedInAccount(this);
         if (lastAccount != null) {
+            String displayName = lastAccount.getDisplayName();
+            String email = lastAccount.getEmail();
+            getSharedPreferences(PREFS, MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_LAST_NAME, displayName == null ? "" : displayName)
+                    .putString(KEY_LOGIN_LABEL, email == null ? "Google" : email)
+                    .apply();
             Intent intent = new Intent(loginActivity.this, MainActivity.class);
-            intent.putExtra("USER_NAME", lastAccount.getDisplayName());
+            intent.putExtra("USER_NAME", displayName);
             startActivity(intent);
             finish();
             return;
@@ -168,7 +178,14 @@ public class loginActivity extends AppCompatActivity {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             String personName = account.getDisplayName();
+            String email = account.getEmail();
             Toast.makeText(this, "登录成功: " + personName, Toast.LENGTH_SHORT).show();
+
+            getSharedPreferences(PREFS, MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_LAST_NAME, personName == null ? "" : personName)
+                    .putString(KEY_LOGIN_LABEL, email == null ? "Google" : email)
+                    .apply();
 
             // 登录后先进入 HOME 页面
             Intent intent = new Intent(loginActivity.this, MainActivity.class);

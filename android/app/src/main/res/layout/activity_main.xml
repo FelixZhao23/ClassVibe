@@ -1,112 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#F3F4F6">
+    android:background="#F2F2F7">
 
     <TextView
+        android:id="@+id/tv_home_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🎓"
-        android:textSize="44sp"
-        android:layout_marginBottom="4dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ClassVibe"
+        android:text="ホーム"
         android:textSize="26sp"
         android:textStyle="bold"
         android:textColor="#111827"
-        android:layout_marginBottom="12dp"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="120dp"/>
 
     <TextView
-        android:id="@+id/tv_welcome"
-        android:layout_width="match_parent"
+        android:id="@+id/tv_home_subtitle"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ようこそ"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#374151"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="参加コード入力またはQRスキャンで教室へ"
+        android:text="参加コードを入力するかQRをスキャンしてください"
         android:textSize="12sp"
         android:textColor="#9CA3AF"
-        android:layout_marginBottom="18dp"/>
+        app:layout_constraintTop_toBottomOf="@id/tv_home_title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp"/>
 
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:id="@+id/row_code"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="4dp"
-        app:cardUseCompatPadding="true"
-        app:cardBackgroundColor="#FFFFFF"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/tv_home_subtitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
+        <EditText
+            android:id="@+id/et_class_code_home"
+            android:layout_width="0dp"
+            android:layout_height="54dp"
+            android:layout_weight="1"
+            android:hint="1234"
+            android:inputType="number"
+            android:textSize="24sp"
+            android:gravity="center"
+            android:maxLength="4"
+            android:textColor="#111827"
+            android:textColorHint="#D1D5DB"
+            android:background="@drawable/bg_input_rounded"/>
 
-            <EditText
-                android:id="@+id/et_class_code_home"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:hint="4桁コード"
-                android:inputType="number"
-                android:textSize="22sp"
-                android:gravity="center"
-                android:maxLength="4"
-                android:background="@drawable/bg_input_rounded"
-                android:paddingHorizontal="16dp"/>
+        <Space
+            android:layout_width="12dp"
+            android:layout_height="1dp"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="14dp">
-
-                <Button
-                    android:id="@+id/btn_scan_qr_home"
-                    android:layout_width="0dp"
-                    android:layout_height="50dp"
-                    android:layout_weight="1"
-                    android:text="QR スキャン"/>
-
-                <Space
-                    android:layout_width="12dp"
-                    android:layout_height="1dp"/>
-
-                <Button
-                    android:id="@+id/btn_join_home"
-                    android:layout_width="0dp"
-                    android:layout_height="50dp"
-                    android:layout_weight="1"
-                    android:text="教室へ参加"/>
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tv_course_preview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="13sp"
-                android:textColor="#2563EB"
-                android:layout_marginTop="10dp"/>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+        <ImageButton
+            android:id="@+id/btn_scan_qr_home"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:background="@drawable/bg_qr_black"
+            android:src="@android:drawable/ic_menu_camera"
+            android:tint="#FFFFFF"
+            android:contentDescription="QR"/>
+    </LinearLayout>
 
     <Button
-        android:id="@+id/btn_profile_home"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="プロフィールへ"/>
+        android:id="@+id/btn_join_home"
+        android:layout_width="0dp"
+        android:layout_height="54dp"
+        android:text="教室に参加"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/bg_join_gray"
+        app:layout_constraintTop_toBottomOf="@id/row_code"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"/>
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/tv_course_preview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#2563EB"
+        app:layout_constraintTop_toBottomOf="@id/btn_join_home"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="10dp"/>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        app:menu="@menu/bottom_nav_menu"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:elevation="8dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

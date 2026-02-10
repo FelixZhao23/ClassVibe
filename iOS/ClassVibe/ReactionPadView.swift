@@ -16,31 +16,33 @@ struct ReactionPadView: View {
     var teamBackground: some View {
         switch viewModel.gameMode {
         case .battle:
-            return AnyView(
-                ZStack {
-                    LinearGradient(
-                        gradient: Gradient(colors: viewModel.myTeam == .red
-                            ? [Color(red: 1.0, green: 0.94, blue: 0.94), Color(red: 1.0, green: 0.80, blue: 0.81)]
-                            : [Color(red: 0.94, green: 0.97, blue: 1.0), Color(red: 0.75, green: 0.86, blue: 0.99)]
-                        ),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .opacity(0.85)
-
-                    RadialGradient(
-                        gradient: Gradient(colors: [Color.white.opacity(0.75), Color.clear]),
-                        center: .topLeading,
-                        startRadius: 30,
-                        endRadius: 280
-                    )
-                    .opacity(0.4)
-                }
-            )
+            return AnyView(teamGradientBackground)
         case .fever:
             return AnyView(Color.purple.opacity(0.2))
         default:
+            if viewModel.myTeam == .red || viewModel.myTeam == .blue {
+                return AnyView(teamGradientBackground)
+            }
             return AnyView(Color(.systemGroupedBackground))
+        }
+    }
+
+    private var teamGradientBackground: some View {
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: viewModel.myTeam == .red
+                    ? [Color(red: 1.00, green: 0.95, blue: 0.95), Color(red: 1.00, green: 0.79, blue: 0.79)]
+                    : [Color(red: 0.94, green: 0.97, blue: 1.00), Color(red: 0.75, green: 0.86, blue: 0.99)]
+                ),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            RadialGradient(
+                gradient: Gradient(colors: [Color.white.opacity(0.7), Color.clear]),
+                center: .topLeading,
+                startRadius: 30,
+                endRadius: 260
+            )
         }
     }
     
@@ -123,13 +125,7 @@ struct ReactionPadView: View {
     }
 
     private var classroomView: some View {
-        ZStack {
-            teamBackground.ignoresSafeArea()
-            if viewModel.gameMode == .fever {
-                LinearGradient(gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple]), startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .opacity(0.3).blendMode(.overlay).ignoresSafeArea()
-            }
-
+        VStack(spacing: 0) {
             VStack {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
@@ -154,7 +150,18 @@ struct ReactionPadView: View {
                 Spacer()
                 MochiPetView(mood: viewModel.currentPetMood)
                     .frame(height: 180)
-                    .padding(.bottom, 20)
+                .padding(.bottom, 16)
+                Spacer(minLength: 12)
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+            .background(teamGradientBackground)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("リアクション")
+                    .font(.headline)
+                    .foregroundColor(Color.gray)
+                    .padding(.horizontal, 22)
 
                 let buttons = [
                     ("understood", "⭕️", "よくわかった", Color.green),
@@ -165,32 +172,44 @@ struct ReactionPadView: View {
                     ("boring", "😩", "面倒", Color.gray)
                 ]
 
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
-                        ForEach(buttons, id: \.0) { btn in
-                            Button(action: { viewModel.sendReaction(type: btn.0) }) {
-                                VStack(spacing: 5) {
-                                    Text(btn.1).font(.system(size: 40))
-                                        .scaleEffect(viewModel.showReactionSuccess == btn.0 ? 1.5 : 1.0)
-                                        .animation(.spring(), value: viewModel.showReactionSuccess)
-                                    Text(btn.2)
-                                        .font(.headline).bold().foregroundColor(.white)
-                                        .multilineTextAlignment(.center).minimumScaleFactor(0.8)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 100)
-                                .background(btn.3)
-                                .cornerRadius(16)
-                                .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 3)
-                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.5), lineWidth: 1))
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    ForEach(buttons, id: \.0) { btn in
+                        Button(action: { viewModel.sendReaction(type: btn.0) }) {
+                            VStack(spacing: 6) {
+                                Text(btn.1).font(.system(size: 40))
+                                    .scaleEffect(viewModel.showReactionSuccess == btn.0 ? 1.5 : 1.0)
+                                    .animation(.spring(), value: viewModel.showReactionSuccess)
+                                Text(btn.2)
+                                    .font(.headline).bold().foregroundColor(.white)
+                                    .multilineTextAlignment(.center).minimumScaleFactor(0.8)
                             }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 100)
+                            .background(btn.3)
+                            .cornerRadius(16)
+                            .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 3)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.5), lineWidth: 1))
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
                 }
+                .padding(.horizontal, 22)
+                .padding(.bottom, 30)
             }
+            .frame(maxWidth: .infinity)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: -2)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+
+            LinearGradient(
+                gradient: Gradient(colors: [Color.white.opacity(0.0), Color.white.opacity(0.6), Color.white]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 18)
         }
+        .background(teamGradientBackground.ignoresSafeArea())
     }
 
     private func joinClass() {

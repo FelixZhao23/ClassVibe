@@ -8,9 +8,11 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
@@ -23,6 +25,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private String userName;
     private String userId;
     private DatabaseReference codesRef;
+    private static final String PREFS = "classvibe_prefs";
+    private static final String KEY_LAST_NAME = "last_student_name";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.trim().isEmpty()) {
+            userName = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_LAST_NAME, null);
+        }
 
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         userId = prefs.getString("SAVED_USER_ID", null);
@@ -49,14 +58,11 @@ public class MainActivity extends AppCompatActivity {
         codesRef = FirebaseDatabase.getInstance("https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app")
                 .getReference("active_codes");
 
-        TextView tvWelcome = findViewById(R.id.tv_welcome);
-        tvWelcome.setText("こんにちは, " + (userName == null ? "Student" : userName));
-
         etCode = findViewById(R.id.et_class_code_home);
         tvCoursePreview = findViewById(R.id.tv_course_preview);
-        Button btnScan = findViewById(R.id.btn_scan_qr_home);
+        ImageButton btnScan = findViewById(R.id.btn_scan_qr_home);
         Button btnJoin = findViewById(R.id.btn_join_home);
-        Button btnProfile = findViewById(R.id.btn_profile_home);
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
         etCode.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -73,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnScan.setOnClickListener(v -> {
             ScanOptions options = new ScanOptions();
+            options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
             options.setPrompt("教室のQRを読み取ってください");
             options.setBeepEnabled(true);
             options.setOrientationLocked(true);
@@ -82,21 +89,47 @@ public class MainActivity extends AppCompatActivity {
 
         btnJoin.setOnClickListener(v -> joinClassByCode(etCode.getText().toString().trim()));
 
-        btnProfile.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
-            intent.putExtra("USER_ID", userId);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_classroom);
+            bottomNav.setOnItemSelectedListener(item -> {
+                if (item.getItemId() == R.id.nav_profile) {
+                    Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                    intent.putExtra("USER_ID", userId);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                    return true;
+                }
+                return true;
+            });
+        }
     }
 
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher =
             registerForActivityResult(new ScanContract(), result -> {
                 if (result.getContents() != null) {
-                    etCode.setText(result.getContents().trim());
-                    joinClassByCode(result.getContents().trim());
+                    String raw = result.getContents().trim();
+                    String code = extractFourDigits(raw);
+                    if (code != null) {
+                        etCode.setText(code);
+                    } else {
+                        Toast.makeText(MainActivity.this, "4桁コードが見つかりません", Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
+
+    private String extractFourDigits(String raw) {
+        if (raw == null) return null;
+        String trimmed = raw.trim();
+        if (trimmed.matches("^\\d{4}$")) {
+            return trimmed;
+        }
+        Pattern pattern = Pattern.compile("\\d{4}");
+        Matcher matcher = pattern.matcher(raw);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return null;
+    }
 
     private void joinClassByCode(String code) {
         if (TextUtils.isEmpty(code)) {
@@ -124,17 +157,10 @@ public class MainActivity extends AppCompatActivity {
                                     Toast.makeText(MainActivity.this, "「" + courseTitle + "」はまだ開始していません", Toast.LENGTH_SHORT).show();
                                     return;
                                 }
-                                new AlertDialog.Builder(MainActivity.this)
-                                        .setTitle("授業参加")
-                                        .setMessage("この授業に参加しますか？\n" + courseTitle)
-                                        .setNegativeButton("キャンセル", null)
-                                        .setPositiveButton("参加", (d, w) -> {
-                                            Intent intent = new Intent(MainActivity.this, ClassroomActivity.class);
-                                            intent.putExtra("COURSE_ID", courseId);
-                                            intent.putExtra("USER_NAME", userName == null ? "student" : userName);
-                                            startActivity(intent);
-                                        })
-                                        .show();
+                                Intent intent = new Intent(MainActivity.this, ClassroomActivity.class);
+                                intent.putExtra("COURSE_ID", courseId);
+                                intent.putExtra("USER_NAME", userName == null ? "student" : userName);
+                                startActivity(intent);
                             }
 
                             @Override

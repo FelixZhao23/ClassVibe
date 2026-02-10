@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 // ⚠️ 这是 App 的“总指挥”文件
 // 负责根据登录状态 (isLoggedIn) 切换显示的内容
@@ -15,7 +16,9 @@ struct ContentView: View {
     @StateObject var viewModel: StudentViewModel
     
     // 2. 状态变量
-    @State private var isLoggedIn = false
+    @AppStorage("is_logged_in") private var isLoggedIn = false
+    @AppStorage("auth_provider") private var authProvider = "none" // "google" | "apple" | "none"
+    @State private var authHandle: AuthStateDidChangeListenerHandle?
     @State private var showAlert = false // 用于显示错误弹窗
     
     // 初始化方法 (允许传入 mock viewModel 用于预览)
@@ -24,6 +27,7 @@ struct ContentView: View {
     }
     
     var body: some View {
+        let _ = startAuthListener()
         if !isLoggedIn {
             // --- A. 未登录状态：显示登录页 ---
             LoginView(
@@ -55,6 +59,19 @@ struct ContentView: View {
                     }
             }
             .accentColor(.blue)
+        }
+    }
+
+    private func startAuthListener() {
+        if authHandle != nil { return }
+        authHandle = Auth.auth().addStateDidChangeListener { _, user in
+            DispatchQueue.main.async {
+                guard self.authProvider == "google" || self.authProvider == "none" else { return }
+                if user != nil && self.authProvider == "none" {
+                    self.authProvider = "google"
+                }
+                self.isLoggedIn = (user != nil)
+            }
         }
     }
     

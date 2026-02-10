@@ -16,6 +16,7 @@ struct MochiPetView: View {
         case .superHappy: return (Color.yellow.opacity(0.2), "太棒了!")
         case .confused: return (Color.orange.opacity(0.2), "嗯...?")
         case .panic: return (Color.purple.opacity(0.2), "救命!") // 这里的文字可以根据 GIF 配合
+        case .dizzy: return (Color.purple.opacity(0.15), "うぅ…") // ぜんぜんわからない
         }
     }
     
@@ -38,6 +39,10 @@ struct MochiPetView: View {
                 GifImage("cry") // ⚠️ 确保你的文件叫 cry.gif 且在项目目录里
                     .frame(width: 160, height: 160) // 调整大小以匹配原来的尺寸
                     .shadow(radius: 5) // 给 GIF 也加点阴影
+            } else if mood == .dizzy {
+                GifImage("dizzy") // ⚠️ 新增: dizzy.gif
+                    .frame(width: 160, height: 160)
+                    .shadow(radius: 5)
             } else {
                 // ============== 原来的代码绘图模式 ==============
                 originalMochiView
@@ -106,7 +111,7 @@ struct MochiPetView: View {
                     )
             case .superHappy: Text("⭐").font(.title2)
             case .confused: Text("😵").font(.title2)
-            case .panic: EmptyView() // ⚠️ 因为 panic 用 GIF 了，这里的代码其实不会被用到，留空即可
+            case .panic, .dizzy: EmptyView() // GIF 模式不需要画眼睛
             default:
                 Circle()
                     .fill(Color.black)
@@ -125,7 +130,7 @@ struct MochiPetView: View {
                     .trim(from: 0, to: 0.5)
                     .stroke(Color.black, lineWidth: 3)
                     .frame(width: 20, height: 20)
-            case .panic: EmptyView() // 同上，GIF 模式下不需要画嘴巴
+            case .panic, .dizzy: EmptyView() // 同上，GIF 模式下不需要画嘴巴
             default:
                 Circle()
                     .stroke(Color.black, lineWidth: 3)
@@ -153,7 +158,7 @@ struct MochiPetView: View {
             withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
                 isBouncing = true
             }
-        case .panic:
+        case .panic, .dizzy:
             // GIF 不需要额外的 SwiftUI 动画代码
             break
         }

@@ -1,29 +1,34 @@
 import SwiftUI
+import PhotosUI
 import FirebaseAuth
 import FirebaseDatabase
 
 struct GachaProfileView: View {
     @ObservedObject var viewModel: StudentViewModel
+    @AppStorage("profile_avatar_path") private var avatarPath: String = ""
     @State private var titleText: String = "はじめの一歩"
     @State private var roleText: String = "student"
     @State private var expTotal: Int = 0
     @State private var dims: [String: Int] = [:]
-    @State private var logs: [(id: String, summary: String, hint: String, exp: Int)] = []
+    @State private var logs: [(id: String, summary: String, hint: String, exp: Int, message: String)] = []
     @State private var loading = true
     @State private var showTitleLevelUp = false
     @State private var upgradedTitle = ""
+    @State private var selectedBadge: BadgeInfo? = nil
+    @State private var showBadgeDetail = false
+    @State private var selectedAvatarItem: PhotosPickerItem? = nil
+    @State private var avatarImage: UIImage? = nil
+    @State private var showBadgeBack = false
+    @State private var showAllLogs = false
 
     private let dbRef = Database.database(url: "https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app/").reference()
 
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 6) {
                     profileHeader
-                    levelCard
-                    dimensionCards
-                    achievementCard
-                    logsCard
+                    growthFlipCard
                 }
                 .padding()
             }
@@ -35,30 +40,171 @@ struct GachaProfileView: View {
                 }
             }
             .onAppear(perform: loadGrowth)
+            .onAppear(perform: loadAvatarFromDisk)
             .overlay(titleLevelUpOverlay)
+            .overlay(badgeDetailOverlay)
         }
     }
 
     private var profileHeader: some View {
         VStack(spacing: 10) {
-            Image(systemName: roleText == "teacher" ? "person.crop.square.badge.checkmark.fill" : "person.crop.circle.badge.checkmark")
-                .resizable()
-                .frame(width: 82, height: 82)
-                .foregroundColor(roleText == "teacher" ? .indigo : .blue)
+            PhotosPicker(selection: $selectedAvatarItem, matching: .images, photoLibrary: .shared()) {
+                ZStack(alignment: .bottomTrailing) {
+                    Group {
+                        if let avatarImage = avatarImage {
+                            Image(uiImage: avatarImage)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            Image(systemName: "person.crop.circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundColor(Color.gray.opacity(0.4))
+                                .padding(10)
+                        }
+                    }
+                    .frame(width: 96, height: 96)
+                    .background(Color.white)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
+
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(Color.black.opacity(0.6))
+                        .clipShape(Circle())
+                        .offset(x: -2, y: -2)
+                }
+            }
+            .onChange(of: selectedAvatarItem) { newItem in
+                guard let newItem = newItem else { return }
+                Task {
+                    if let data = try? await newItem.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        await MainActor.run {
+                            self.avatarImage = uiImage
+                        }
+                        saveAvatarToDisk(data: data)
+                    }
+                }
+            }
+
             Text(displayNameText()).font(.title3).bold()
-            Text(roleText == "teacher" ? "Teacher" : "Student")
-                .font(.caption).foregroundColor(.gray)
-            Text(titleText)
-                .font(.headline)
-                .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(Color.indigo.opacity(0.12))
-                .cornerRadius(14)
         }
         .frame(maxWidth: .infinity)
         .padding()
         .background(Color.white)
         .cornerRadius(16)
         .shadow(radius: 2)
+    }
+
+    private var growthFlipCard: some View {
+        let rotation = showBadgeBack ? 180.0 : 0.0
+        return ZStack {
+            growthFrontCard
+                .opacity(showBadgeBack ? 0 : 1)
+            growthBackCard
+                .opacity(showBadgeBack ? 1 : 0)
+                .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+        }
+        .rotation3DEffect(.degrees(rotation), axis: (x: 0, y: 1, z: 0))
+        .animation(.spring(response: 0.45, dampingFraction: 0.86), value: showBadgeBack)
+        .onTapGesture { showBadgeBack.toggle() }
+    }
+
+    private var growthFrontCard: some View {
+        let levelData = levelInfo(from: expTotal)
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Lv.\(levelData.level)").font(.title2).bold()
+            ProgressView(value: levelData.progress)
+                .progressViewStyle(.linear)
+                .tint(.orange)
+            Text("EXP \(levelData.currentInLevel) / \(levelData.needForNext)")
+                .font(.caption).foregroundColor(.gray)
+
+            VStack(spacing: 10) {
+                HStack {
+                    statCard("理解", "\(dims["understand", default: 0])", .green)
+                    statCard("質問", "\(dims["question", default: 0])", .blue)
+                    statCard("協力", "\(dims["collab", default: 0])", .purple)
+                }
+                HStack {
+                    statCard("参加", "\(dims["engagement", default: 0])", .pink)
+                    statCard("安定", "\(dims["stability", default: 0])", .teal)
+                    statCard("総EXP", "\(expTotal)", .orange)
+                }
+            }
+
+            logsPreview
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(radius: 1)
+    }
+
+    private var logsPreview: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("成長ログ").font(.headline)
+                Spacer()
+                Button("すべて見る") { showAllLogs = true }
+                    .font(.caption).foregroundColor(.blue)
+            }
+            if logs.isEmpty {
+                Text(loading ? "読み込み中..." : "まだログがありません")
+                    .foregroundColor(.gray)
+            } else {
+                ForEach(logs.prefix(4), id: \.id) { log in
+                    logRow(log)
+                }
+            }
+        }
+        .sheet(isPresented: $showAllLogs) {
+            NavigationView {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if logs.isEmpty {
+                            Text(loading ? "読み込み中..." : "まだログがありません")
+                                .foregroundColor(.gray)
+                        } else {
+                            ForEach(logs, id: \.id) { log in
+                                logRow(log)
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .navigationTitle("成長ログ")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("閉じる") { showAllLogs = false }
+                    }
+                }
+            }
+        }
+    }
+
+    private var growthBackCard: some View {
+        let badges = badgeCatalog()
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
+        return VStack(alignment: .leading, spacing: 12) {
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(badges) { badge in
+                        badgeIconView(badge)
+                            .onTapGesture { showBadgeInfo(for: badge) }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(radius: 1)
     }
 
     private var levelCard: some View {
@@ -96,54 +242,23 @@ struct GachaProfileView: View {
         }
     }
 
-    private var achievementCard: some View {
-        let badges = achievementBadges()
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("実績バッジ").font(.headline)
-            if badges.isEmpty {
-                Text("授業に参加してバッジを集めよう").font(.caption).foregroundColor(.gray)
-            } else {
-                ForEach(badges, id: \.self) { badge in
-                    Text("🏅 \(badge)").font(.subheadline)
-                }
+    private func logRow(_ log: (id: String, summary: String, hint: String, exp: Int, message: String)) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(log.summary).font(.subheadline).lineLimit(2)
+                Spacer()
+                Text("+\(log.exp) EXP").font(.caption).bold().foregroundColor(.green)
+            }
+            if !log.message.isEmpty {
+                Text("💬 \(log.message)").font(.caption).foregroundColor(.gray)
+            }
+            if !log.hint.isEmpty {
+                Text("次の目標: \(log.hint)").font(.caption).foregroundColor(.blue)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .padding(10)
         .background(Color.white)
-        .cornerRadius(16)
-        .shadow(radius: 1)
-    }
-
-    private var logsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("成長ログ").font(.headline)
-            if logs.isEmpty {
-                Text(loading ? "読み込み中..." : "まだログがありません")
-                    .foregroundColor(.gray)
-            } else {
-                ForEach(logs, id: \.id) { log in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(log.summary).font(.subheadline).lineLimit(2)
-                            Spacer()
-                            Text("+\(log.exp) EXP").font(.caption).bold().foregroundColor(.green)
-                        }
-                        if !log.hint.isEmpty {
-                            Text("次の目標: \(log.hint)").font(.caption).foregroundColor(.blue)
-                        }
-                        Text(log.id).font(.caption2).foregroundColor(.gray)
-                    }
-                    .padding(10)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.gray.opacity(0.08))
-        .cornerRadius(16)
+        .cornerRadius(10)
     }
 
     private func statCard(_ label: String, _ value: String, _ color: Color) -> some View {
@@ -198,14 +313,15 @@ struct GachaProfileView: View {
         }
 
         dbRef.child("users").child(uid).child("growth_logs").observeSingleEvent(of: .value) { snap in
-            var temp: [(id: String, summary: String, hint: String, exp: Int)] = []
+            var temp: [(id: String, summary: String, hint: String, exp: Int, message: String)] = []
             let logsData = snap.value as? [String: Any] ?? [:]
             for (key, value) in logsData {
                 let row = value as? [String: Any] ?? [:]
                 let summary = row["summary"] as? String ?? "成長記録"
                 let hint = row["next_hint"] as? String ?? ""
                 let exp = row["exp_gain"] as? Int ?? Int((row["exp_gain"] as? Double) ?? 0)
-                temp.append((id: key, summary: summary, hint: hint, exp: exp))
+                let message = row["message"] as? String ?? ""
+                temp.append((id: key, summary: summary, hint: hint, exp: exp, message: message))
             }
             logs = Array(temp.sorted(by: { $0.id > $1.id }).prefix(20))
             loading = false
@@ -250,11 +366,178 @@ struct GachaProfileView: View {
 
     private func achievementBadges() -> [String] {
         var result: [String] = []
+        if dims["understand", default: 0] >= 1 { result.append("理解の見習い") }
         if dims["question", default: 0] >= 10 { result.append("対話の火種") }
         if dims["collab", default: 0] >= 10 { result.append("チームブースター") }
         if dims["stability", default: 0] >= 8 { result.append("静かな支柱") }
         if dims["engagement", default: 0] >= 12 { result.append("行動派") }
         return result
+    }
+
+    private func badgeIconView(_ badge: BadgeInfo) -> some View {
+        Group {
+            if badge.unlocked {
+                Image(badge.imageName)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle().fill(Color.gray.opacity(0.25))
+            }
+        }
+        .frame(width: 64, height: 64)
+        .clipShape(Circle())
+        .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+    }
+
+    private func allBadgeAssets() -> [String] {
+        (1...28).map { String(format: "badge_%02d", $0) }
+    }
+
+    private func badgeCatalog() -> [BadgeInfo] {
+        allBadgeAssets().map { id in
+            let meta = badgeMetaFor(id)
+            return BadgeInfo(
+                id: id,
+                title: meta.title,
+                imageName: id,
+                condition: meta.condition,
+                unlocked: isBadgeUnlocked(id: id)
+            )
+        }
+    }
+
+    private func badgeMetaFor(_ id: String) -> (title: String, condition: String) {
+        switch id {
+        case "badge_01": return ("協力の見習い", "協力系の成長ポイントが1以上")
+        case "badge_02": return ("インタラクション加速者", "参加系の成長ポイントが3以上")
+        case "badge_03": return ("クラス守護バリア", "安定系の成長ポイントが10以上")
+        case "badge_04": return ("クラス連結コア", "協力系の成長ポイントが15以上")
+        case "badge_05": return ("ソクラテスの眼", "質問系の成長ポイントが15以上")
+        case "badge_06": return ("チームエンジン", "協力系の成長ポイントが6以上")
+        case "badge_07": return ("ヒントハンター", "質問系の成長ポイントが3以上")
+        case "badge_08": return ("ムード点火師", "参加系の成長ポイントが6以上")
+        case "badge_09": return ("リズムウォッチャー", "安定系の成長ポイントが3以上")
+        case "badge_10": return ("不動のガーディアン", "安定系の成長ポイントが15以上")
+        case "badge_11": return ("五角形レジェンド", "全ての成長ポイントが10以上")
+        case "badge_12": return ("全体ビートメーカー", "参加系の成長ポイントが20以上")
+        case "badge_13": return ("共創キャプテン", "協力系の成長ポイントが10以上")
+        case "badge_14": return ("参加の見習い", "参加系の成長ポイントが1以上")
+        case "badge_15": return ("安定の見習い", "安定系の成長ポイントが1以上")
+        case "badge_16": return ("対話イグナイター", "質問系の成長ポイントが6以上")
+        case "badge_17": return ("思考ダブルコア", "理解系と質問系の成長ポイントが10以上")
+        case "badge_18": return ("思考ナビゲーター", "理解系の成長ポイントが10以上")
+        case "badge_19": return ("授業プッシャー", "参加系の成長ポイントが10以上")
+        case "badge_20": return ("洞察チェイサー", "質問系の成長ポイントが10以上")
+        case "badge_21": return ("熱量スター", "参加系の成長ポイントが15以上")
+        case "badge_22": return ("理解の見習い", "理解系の成長ポイントが1以上")
+        case "badge_23": return ("真理トラッカー", "理解系の成長ポイントが15以上")
+        case "badge_24": return ("知識クラフター", "理解系の成長ポイントが6以上")
+        case "badge_25": return ("秩序リペアラー", "安定系の成長ポイントが6以上")
+        case "badge_26": return ("紅青コーディネーター", "協力系の成長ポイントが3以上")
+        case "badge_27": return ("解法トラベラー", "理解系の成長ポイントが3以上")
+        case "badge_28": return ("質問の見習い", "質問系の成長ポイントが1以上")
+        default: return ("バッジ", "条件データ準備中")
+        }
+    }
+
+    private func isBadgeUnlocked(id: String) -> Bool {
+        let understand = dims["understand", default: 0]
+        let question = dims["question", default: 0]
+        let collab = dims["collab", default: 0]
+        let engagement = dims["engagement", default: 0]
+        let stability = dims["stability", default: 0]
+        switch id {
+        case "badge_01": return collab >= 1
+        case "badge_02": return engagement >= 3
+        case "badge_03": return stability >= 10
+        case "badge_04": return collab >= 15
+        case "badge_05": return question >= 15
+        case "badge_06": return collab >= 6
+        case "badge_07": return question >= 3
+        case "badge_08": return engagement >= 6
+        case "badge_09": return stability >= 3
+        case "badge_10": return stability >= 15
+        case "badge_11": return understand >= 10 && question >= 10 && collab >= 10 && engagement >= 10 && stability >= 10
+        case "badge_12": return engagement >= 20
+        case "badge_13": return collab >= 10
+        case "badge_14": return engagement >= 1
+        case "badge_15": return stability >= 1
+        case "badge_16": return question >= 6
+        case "badge_17": return understand >= 10 && question >= 10
+        case "badge_18": return understand >= 10
+        case "badge_19": return engagement >= 10
+        case "badge_20": return question >= 10
+        case "badge_21": return engagement >= 15
+        case "badge_22": return understand >= 1
+        case "badge_23": return understand >= 15
+        case "badge_24": return understand >= 6
+        case "badge_25": return stability >= 6
+        case "badge_26": return collab >= 3
+        case "badge_27": return understand >= 3
+        case "badge_28": return question >= 1
+        default: return false
+        }
+    }
+
+    private func showBadgeInfo(for badge: BadgeInfo) {
+        selectedBadge = badge
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showBadgeDetail = true
+        }
+    }
+
+    private var badgeDetailOverlay: some View {
+        Group {
+            if showBadgeDetail, let info = selectedBadge {
+                ZStack {
+                    Color.black.opacity(0.5).ignoresSafeArea()
+                        .onTapGesture { hideBadgeDetail() }
+                    VStack(spacing: 14) {
+                        Group {
+                            if info.unlocked {
+                                Image(info.imageName)
+                                    .resizable()
+                                    .scaledToFill()
+                            } else {
+                                Circle().fill(Color.gray.opacity(0.25))
+                            }
+                        }
+                        .frame(width: 180, height: 180)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.yellow.opacity(0.85), lineWidth: 6)
+                                .shadow(color: Color.yellow.opacity(0.6), radius: 12, x: 0, y: 0)
+                        )
+                        .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+
+                        Text(info.title).font(.title3).bold()
+                        Text("獲得条件: \(info.condition)")
+                            .font(.callout)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 18)
+
+                        Button(action: hideBadgeDetail) {
+                            Text("閉じる").font(.headline).padding(.horizontal, 24).padding(.vertical, 8)
+                        }
+                        .background(Color.black.opacity(0.08))
+                        .cornerRadius(14)
+                    }
+                    .padding(24)
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .shadow(radius: 24)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+        }
+    }
+
+    private func hideBadgeDetail() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showBadgeDetail = false
+        }
     }
 
     private func displayNameText() -> String {
@@ -265,4 +548,35 @@ struct GachaProfileView: View {
         }
         return "Student"
     }
+
+    private func avatarFileURL() -> URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("profile_avatar.jpg")
+    }
+
+    private func loadAvatarFromDisk() {
+        guard let url = avatarFileURL(),
+              let data = try? Data(contentsOf: url),
+              !data.isEmpty,
+              let image = UIImage(data: data) else { return }
+        avatarImage = image
+        avatarPath = url.path
+    }
+
+    private func saveAvatarToDisk(data: Data) {
+        guard let url = avatarFileURL() else { return }
+        do {
+            try data.write(to: url, options: [.atomic])
+            avatarPath = url.path
+        } catch {
+            print("Save avatar failed: \(error.localizedDescription)")
+        }
+    }
+}
+
+private struct BadgeInfo: Identifiable {
+    let id: String
+    let title: String
+    let imageName: String
+    let condition: String
+    let unlocked: Bool
 }

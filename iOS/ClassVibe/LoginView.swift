@@ -13,6 +13,10 @@ struct LoginView: View {
     // --- 内部状态 ---
     @State private var loginMethodText = "" // 显示当前是用什么登录的
     @State private var authErrorText = ""
+    @AppStorage("is_logged_in") private var isLoggedIn = false
+    @AppStorage("auth_provider") private var authProvider = "none"
+    @AppStorage("last_student_name") private var lastStudentName = ""
+    @AppStorage("login_method_label") private var loginMethodLabel = ""
     
     var body: some View {
         ZStack {
@@ -147,6 +151,10 @@ struct LoginView: View {
             
             self.studentName = name
             self.loginMethodText = "Apple ID"
+            self.authProvider = "apple"
+            self.isLoggedIn = true
+            self.lastStudentName = name
+            self.loginMethodLabel = "Apple ID"
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { onAuthSuccess() }
         default: break
         }
@@ -191,6 +199,10 @@ struct LoginView: View {
 
                 self.studentName = profileName
                 self.loginMethodText = email
+                self.authProvider = "google"
+                self.isLoggedIn = true
+                self.lastStudentName = profileName
+                self.loginMethodLabel = email
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     onAuthSuccess()

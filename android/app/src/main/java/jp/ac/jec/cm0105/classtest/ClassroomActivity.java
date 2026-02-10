@@ -9,6 +9,8 @@ import android.content.SharedPreferences; // 必须导入这个
 import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.graphics.ImageDecoder;
+import android.graphics.drawable.AnimatedImageDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.graphics.Color;
@@ -44,6 +46,8 @@ public class ClassroomActivity extends AppCompatActivity {
     private FrameLayout mochiContainer;
     private View mochiBody, mochiFace, snotBubble;
     private ImageView eyeLeft, eyeRight, mouth;
+    private ImageView dizzyGif;
+    private AnimatedImageDrawable dizzyDrawable;
     private TextView tvClassTitle;
     private TextView emoteQuestion;
     private TextView tvTeamLabel;
@@ -120,6 +124,7 @@ public class ClassroomActivity extends AppCompatActivity {
         eyeLeft = findViewById(R.id.eye_left);
         eyeRight = findViewById(R.id.eye_right);
         mouth = findViewById(R.id.mouth);
+        dizzyGif = findViewById(R.id.dizzy_gif);
         tvClassTitle = findViewById(R.id.tv_class_title);
         emoteQuestion = findViewById(R.id.emote_question);
         tvTeamLabel = findViewById(R.id.tv_team_label);
@@ -140,6 +145,12 @@ public class ClassroomActivity extends AppCompatActivity {
         }
 
         chooseBalancedTeamAndStart();
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Prevent swipe-back from exiting; use explicit leave button instead.
+        showLeaveConfirm();
     }
 
     // === 上线打卡 ===
@@ -206,7 +217,7 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setLayoutParams(params);
             emoteQuestion.setRotation(20);
 
-            animateConfused();
+            animateLost(); // dizzy gif for ぜんぜんわからない
             submitReaction("question", "question", () -> scoreIncrement.onClick(v));
         });
 
@@ -223,7 +234,7 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setLayoutParams(params);
             emoteQuestion.setRotation(-20);
 
-            animateLost();
+            animateConfused();
             submitReaction("amazing", "amazing", () -> scoreIncrement.onClick(v));
         });
 
@@ -651,6 +662,7 @@ public class ClassroomActivity extends AppCompatActivity {
 
     private void animateLost() {
         startAction();
+        showDizzyGif();
         eyeLeft.setImageResource(R.drawable.shape_eye_normal);
         eyeRight.setImageResource(R.drawable.shape_eye_normal);
         updateViewSize(eyeLeft, 10, 10);
@@ -691,11 +703,35 @@ public class ClassroomActivity extends AppCompatActivity {
 
     private void endAction() {
         isPerformingAction = false;
+        hideDizzyGif();
         if (isSleeping) setSleepingState(true);
         else {
             startBreathAnimation();
             updateVisualsByMood();
         }
+    }
+
+    private void showDizzyGif() {
+        if (dizzyGif == null) return;
+        try {
+            ImageDecoder.Source source = ImageDecoder.createSource(getResources(), R.drawable.dizzy);
+            AnimatedImageDrawable drawable = (AnimatedImageDrawable) ImageDecoder.decodeDrawable(source);
+            dizzyDrawable = drawable;
+            dizzyGif.setImageDrawable(drawable);
+            dizzyGif.setVisibility(View.VISIBLE);
+            drawable.start();
+        } catch (Exception e) {
+            // fallback: hide if decode fails
+            dizzyGif.setVisibility(View.GONE);
+        }
+    }
+
+    private void hideDizzyGif() {
+        if (dizzyGif == null) return;
+        if (dizzyDrawable != null) {
+            dizzyDrawable.stop();
+        }
+        dizzyGif.setVisibility(View.GONE);
     }
 
     private void startBreathAnimation() {

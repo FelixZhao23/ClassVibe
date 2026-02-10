@@ -780,27 +780,138 @@
             return (sum % 2 === 0) ? 'red' : 'blue';
         }
 
-        function computeTitle(dims) {
+        function calcLevel(expTotal) {
+            let level = 1;
+            let remaining = Math.max(0, Number(expTotal || 0));
+            let need = 120;
+            while (remaining >= need) {
+                remaining -= need;
+                level += 1;
+                need = 120 + ((level - 1) * 20);
+            }
+            return level;
+        }
+
+        function computeTitle(dims, level) {
             const entries = Object.entries(dims || {});
             if (entries.length === 0) return 'はじめの一歩';
             entries.sort((a, b) => (b[1] || 0) - (a[1] || 0));
             const primary = entries[0]?.[0] || 'engagement';
-            const secondary = entries[1]?.[0] || primary;
-            const key = `${primary}:${secondary}`;
-            const reverseKey = `${secondary}:${primary}`;
-            const map = {
-                'question:collab': '対話の火種',
-                'collab:question': '対話の火種',
-                'understand:stability': '静かな支柱',
-                'stability:understand': '静かな支柱',
-                'engagement:collab': 'チームブースター',
-                'collab:engagement': 'チームブースター',
-                'understand:question': '深掘りナビゲーター',
-                'question:understand': '深掘りナビゲーター',
-                'engagement:stability': 'コツコツ実践者',
-                'stability:engagement': 'コツコツ実践者'
+            const titles = {
+                understand: ['理解の見習い', '解法トラベラー', '知識クラフター', '思考ナビゲーター', '真理トラッカー'],
+                question: ['質問の見習い', 'ヒントハンター', '対話イグナイター', '洞察チェイサー', 'ソクラテスの眼'],
+                collab: ['協力の見習い', '紅青コーディネーター', 'チームエンジン', '共創キャプテン', 'クラス連結コア'],
+                engagement: ['参加の見習い', 'インタラクション加速者', 'ムード点火師', '授業プッシャー', '熱量スター'],
+                stability: ['安定の見習い', 'リズムウォッチャー', '秩序リペアラー', 'クラス守護バリア', '不動のガーディアン']
             };
-            return map[key] || map[reverseKey] || 'クラスメイトの力';
+            const tier = Math.min(4, Math.max(0, (level || 1) - 1));
+            return (titles[primary] && titles[primary][tier]) ? titles[primary][tier] : 'はじめの一歩';
+        }
+
+        const MESSAGE_POOL = {
+            high_engagement: [
+                { id: "high_engagement_01", text: "今日の一歩が、明日の自信になる。" },
+                { id: "high_engagement_02", text: "教室の空気は、君の手で温かくなる。" },
+                { id: "high_engagement_03", text: "小さな参加が、大きな流れを作る。" },
+                { id: "high_engagement_04", text: "動いた分だけ、学びは前へ進む。" },
+                { id: "high_engagement_05", text: "熱量は、誰かの勇気にもなる。" },
+                { id: "high_engagement_06", text: "一回の反応が、集中を生む。" },
+                { id: "high_engagement_07", text: "今日の活発さは、明日の成長の土台。" },
+                { id: "high_engagement_08", text: "参加は小さな挑戦、挑戦は大きな力。" },
+                { id: "high_engagement_09", text: "今の勢いが、理解の扉を開く。" },
+                { id: "high_engagement_10", text: "行動が先、結果は後。よく動いた。" }
+            ],
+            low_engagement: [
+                { id: "low_engagement_01", text: "静かな時間も、次の一歩の準備。" },
+                { id: "low_engagement_02", text: "迷ったら、小さく反応してみよう。" },
+                { id: "low_engagement_03", text: "一度の参加で、空気が変わることもある。" },
+                { id: "low_engagement_04", text: "止まってもいい、また動けばいい。" },
+                { id: "low_engagement_05", text: "小さな合図が、集中のスイッチになる。" },
+                { id: "low_engagement_06", text: "焦らなくて大丈夫。まず一回。" },
+                { id: "low_engagement_07", text: "沈黙は敵じゃない。次の声を待っている。" },
+                { id: "low_engagement_08", text: "迷いは成長の入口。小さく試そう。" },
+                { id: "low_engagement_09", text: "一歩目は短くていい。踏み出せば進む。" },
+                { id: "low_engagement_10", text: "今日の一回が、明日の習慣になる。" }
+            ],
+            high_understand: [
+                { id: "high_understand_01", text: "理解が深いほど、道はクリアになる。" },
+                { id: "high_understand_02", text: "今日の理解は、明日の応用に変わる。" },
+                { id: "high_understand_03", text: "腑に落ちる感覚を大事にしよう。" },
+                { id: "high_understand_04", text: "分かった瞬間は、次の学びの鍵。" },
+                { id: "high_understand_05", text: "理解は静かな勝利だ。" },
+                { id: "high_understand_06", text: "仕組みが見えたら、怖くない。" },
+                { id: "high_understand_07", text: "理解の積み重ねは、強い土台になる。" },
+                { id: "high_understand_08", text: "本質に近づくほど、迷いは減る。" },
+                { id: "high_understand_09", text: "理解は「できる」への橋。" },
+                { id: "high_understand_10", text: "今日はよく噛み砕けた。いい流れ。" }
+            ],
+            low_understand: [
+                { id: "low_understand_01", text: "わからないは、伸びしろの合図。" },
+                { id: "low_understand_02", text: "理解が揺れる日も、学びは進んでいる。" },
+                { id: "low_understand_03", text: "一つずつ分解すれば、道は見える。" },
+                { id: "low_understand_04", text: "今は霧でも、少しずつ晴れる。" },
+                { id: "low_understand_05", text: "迷いは成長の証。立ち止まってOK。" },
+                { id: "low_understand_06", text: "難しいと感じたら、質問が光になる。" },
+                { id: "low_understand_07", text: "ゆっくりでいい、確実に前へ。" },
+                { id: "low_understand_08", text: "わからないを言える強さがある。" },
+                { id: "low_understand_09", text: "今日の混乱は、明日の理解へ繋がる。" },
+                { id: "low_understand_10", text: "難所に出会えたのは、成長の前兆。" }
+            ],
+            high_question: [
+                { id: "high_question_01", text: "良い質問は、良い理解を連れてくる。" },
+                { id: "high_question_02", text: "問いがある人は、学びが深くなる。" },
+                { id: "high_question_03", text: "疑問は前進のエンジン。" },
+                { id: "high_question_04", text: "質問は勇気。今日の君は強い。" },
+                { id: "high_question_05", text: "問いを立てる力が、答えを導く。" },
+                { id: "high_question_06", text: "質問が教室の質を上げる。" },
+                { id: "high_question_07", text: "「なぜ？」は理解の入口。" },
+                { id: "high_question_08", text: "疑問を言葉にする、それが成長。" },
+                { id: "high_question_09", text: "問いの数だけ、視野が広がる。" },
+                { id: "high_question_10", text: "質問は未来への投資だ。" }
+            ],
+            stable: [
+                { id: "stable_01", text: "安定した歩みが、一番遠くへ行く。" },
+                { id: "stable_02", text: "落ち着きは、理解の味方。" },
+                { id: "stable_03", text: "継続は静かな才能だ。" },
+                { id: "stable_04", text: "一定のペースが学びを育てる。" },
+                { id: "stable_05", text: "焦らず進む人が、最後に強い。" },
+                { id: "stable_06", text: "毎回少しずつ。それが最短ルート。" },
+                { id: "stable_07", text: "安定は、信頼を積み上げる。" },
+                { id: "stable_08", text: "揺れない姿勢が、周りを安心させる。" },
+                { id: "stable_09", text: "地道さは、未来を裏切らない。" },
+                { id: "stable_10", text: "今日のペースが、明日の力になる。" }
+            ]
+        };
+
+        function decideMessageCategory(metric) {
+            const effective = toSafeNumber(metric.effective_interactions);
+            const understood = toSafeNumber(metric.understood_count);
+            const question = toSafeNumber(metric.question_count);
+            const confused = toSafeNumber(metric.confused_count);
+            if (understood >= 3 && effective >= 6) return "high_understand";
+            if (question >= 2) return "high_question";
+            if (effective >= 8) return "high_engagement";
+            if (confused >= 2) return "low_understand";
+            if (effective <= 1) return "low_engagement";
+            return "stable";
+        }
+
+        function pickMessage(category, history) {
+            const pool = MESSAGE_POOL[category] || [];
+            const used = new Set(Object.keys(history || {}));
+            let available = pool.filter(item => !used.has(item.id));
+            let nextHistory = { ...(history || {}) };
+            if (available.length === 0 && pool.length > 0) {
+                // reset used in this category
+                pool.forEach(item => { delete nextHistory[item.id]; });
+                available = pool.slice();
+            }
+            if (available.length === 0) {
+                return { id: "fallback", text: "今日の学びが、明日の自信になる。", history: nextHistory };
+            }
+            const picked = available[0];
+            nextHistory[picked.id] = true;
+            return { id: picked.id, text: picked.text, history: nextHistory };
         }
 
         function calculateGrowthAward(metric, battleWinner, hpResult) {
@@ -843,6 +954,9 @@
                 const growthRef = db.ref(`users/${uid}/growth`);
                 const logRef = db.ref(`users/${uid}/growth_logs/${sessionId}`);
 
+                const category = decideMessageCategory(metric);
+                let messageText = "";
+                let messageId = "";
                 await growthRef.transaction(current => {
                     const base = current || {};
                     const dims = base.dims || {
@@ -859,18 +973,33 @@
                         engagement: toSafeNumber(dims.engagement) + award.gains.engagement,
                         stability: toSafeNumber(dims.stability) + award.gains.stability
                     };
-                    const nextTitle = computeTitle(nextDims);
+                    const nextExpTotal = toSafeNumber(base.exp_total) + award.exp;
+                    const nextLevel = calcLevel(nextExpTotal);
+                    const nextTitle = computeTitle(nextDims, nextLevel);
                     const history = Array.isArray(base.title_history) ? [...base.title_history] : [];
                     if (nextTitle && history[history.length - 1] !== nextTitle) history.push(nextTitle);
                     if (history.length > 20) history.splice(0, history.length - 20);
+                    const messagePick = pickMessage(category, base.message_history || {});
+                    messageText = messagePick.text;
+                    messageId = messagePick.id;
 
                     return {
-                        exp_total: toSafeNumber(base.exp_total) + award.exp,
+                        exp_total: nextExpTotal,
                         dims: nextDims,
                         title_current: nextTitle,
                         title_history: history,
+                        message_history: messagePick.history,
+                        last_message: messageText,
+                        last_message_id: messageId,
+                        last_message_category: category,
                         updated_at: Date.now()
                     };
+                }).then(result => {
+                    if (result && result.snapshot) {
+                        const latest = result.snapshot.val() || {};
+                        messageText = latest.last_message || messageText;
+                        messageId = latest.last_message_id || messageId;
+                    }
                 });
 
                 await logRef.set({
@@ -878,7 +1007,10 @@
                     exp_gain: award.exp,
                     gains: award.gains,
                     summary: `有効互动 ${toSafeNumber(metric.effective_interactions).toFixed(1)} / 提問 ${toSafeNumber(metric.question_count)} 回`,
-                    next_hint: "次回は質問を1回増やして称号を強化しよう"
+                    next_hint: "次回は質問を1回増やして称号を強化しよう",
+                    message: messageText,
+                    message_id: messageId,
+                    message_category: category
                 });
             }));
 

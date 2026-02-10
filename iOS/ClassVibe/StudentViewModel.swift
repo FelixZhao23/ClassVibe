@@ -393,6 +393,11 @@ class StudentViewModel: ObservableObject {
         if isMock {
             // 模拟数据
             self.inventory = [RewardItem(name: "预览券", rarity: "SR", icon: "✨")]
+            return
+        }
+        let savedName = UserDefaults.standard.string(forKey: "last_student_name") ?? ""
+        if !savedName.isEmpty {
+            self.studentName = savedName
         }
     }
     // 发送反馈：普通模式写 courses/{id}/reactions，RealReaction 模式写 courses/{id}/real_reaction
@@ -618,7 +623,9 @@ class StudentViewModel: ObservableObject {
         case "understood":
             self.currentPetMood = .superHappy // 星星眼
             
-        case "difficult", "lost", "panic", "unclear":
+        case "lost":
+            self.currentPetMood = .dizzy // ぜんぜんわからない
+        case "difficult", "panic", "unclear":
             self.currentPetMood = .panic // 😭 触发 GIF
             
         case "slacking", "boring":

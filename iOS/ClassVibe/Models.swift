@@ -56,4 +56,5 @@ enum PetMood {
     case superHappy // 气氛热烈 (星星眼)
     case confused   // 困惑 (晕)
     case panic      // 恐慌 (哭)
+    case dizzy      // 眩晕 (ぜんぜんわからない)
 }

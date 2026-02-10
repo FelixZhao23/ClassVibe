@@ -34,145 +34,309 @@
                 android:textSize="22sp"
                 android:textStyle="bold"
                 android:textColor="#111827"
-                android:layout_marginBottom="10dp"/>
+                android:layout_marginBottom="10dp"
+                android:layout_marginEnd="48dp"/>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="#FFFFFF">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:id="@+id/img_role_avatar"
-                        android:layout_width="72dp"
-                        android:layout_height="72dp"
-                        android:src="@android:drawable/sym_def_app_icon"
-                        android:background="@drawable/bg_input_rounded"
-                        android:padding="8dp"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
-
-                        <TextView
-                            android:id="@+id/tv_profile_name"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Student"
-                            android:textSize="19sp"
-                            android:textStyle="bold"
-                            android:textColor="#1F2937"/>
-
-                        <TextView
-                            android:id="@+id/tv_profile_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="はじめの一歩"
-                            android:textSize="12sp"
-                            android:textColor="#4F46E5"
-                            android:layout_marginTop="6dp"
-                            android:paddingLeft="10dp"
-                            android:paddingRight="10dp"
-                            android:paddingTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:background="#EEF2FF"/>
-                    </LinearLayout>
-
-                    <ImageButton
-                        android:id="@+id/btn_settings"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="#F3F4F6"
-                        android:src="@android:drawable/ic_menu_manage"
-                        android:contentDescription="設定"
-                        android:scaleType="centerInside"
-                        android:layout_marginStart="8dp"
-                        android:padding="6dp"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="3dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
                 app:cardBackgroundColor="#FFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:paddingTop="18dp"
+                    android:paddingBottom="18dp"
+                    android:gravity="center_horizontal">
+
+                    <FrameLayout
+                        android:layout_width="112dp"
+                        android:layout_height="112dp"
+                        android:clipToPadding="false"
+                        android:clipChildren="false">
+
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="104dp"
+                            android:layout_height="104dp"
+                            android:layout_gravity="center"
+                            app:cardCornerRadius="52dp"
+                            app:cardUseCompatPadding="false"
+                            app:cardPreventCornerOverlap="true"
+                            app:cardElevation="2dp">
+
+                            <ImageView
+                                android:id="@+id/img_role_avatar"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:src="@android:drawable/sym_def_app_icon"/>
+                        </androidx.cardview.widget.CardView>
+
+                        <ImageView
+                            android:id="@+id/img_avatar_edit"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="bottom|end"
+                            android:layout_margin="2dp"
+                            android:src="@android:drawable/ic_menu_camera"
+                            android:background="@drawable/bg_avatar_camera"
+                            android:padding="4dp"
+                            android:elevation="6dp"
+                            android:translationZ="6dp"/>
+                    </FrameLayout>
 
                     <TextView
-                        android:id="@+id/tv_level"
+                        android:id="@+id/tv_profile_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Lv.1"
-                        android:textStyle="bold"
+                        android:layout_marginTop="12dp"
+                        android:text="Student"
                         android:textSize="20sp"
+                        android:textStyle="bold"
                         android:textColor="#111827"/>
 
-                    <ProgressBar
-                        android:id="@+id/progress_exp"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="10dp"
-                        android:layout_marginTop="8dp"
-                        android:progressTint="#F59E0B"
-                        android:max="100"
-                        android:progress="0"/>
-
-                    <TextView
-                        android:id="@+id/tv_points"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="EXP 0 / 120"
-                        android:textColor="#6B7280"
-                        android:layout_marginTop="6dp"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_growth"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="2dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
                 app:cardBackgroundColor="#FFFFFF">
 
-                <GridLayout
+                <FrameLayout
+                    android:id="@+id/growth_flip_container"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="12dp"
-                    android:columnCount="2">
+                    android:layout_height="wrap_content">
 
-                    <TextView android:id="@+id/tv_dim_understand" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="理解: 0" android:textColor="#16A34A" android:background="@drawable/bg_stat_pill"/>
-                    <TextView android:id="@+id/tv_dim_question" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="質問: 0" android:textColor="#2563EB" android:background="@drawable/bg_stat_pill"/>
-                    <TextView android:id="@+id/tv_dim_collab" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="協力: 0" android:textColor="#7C3AED" android:background="@drawable/bg_stat_pill"/>
-                    <TextView android:id="@+id/tv_dim_engagement" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="参加: 0" android:textColor="#DB2777" android:background="@drawable/bg_stat_pill"/>
-                    <TextView android:id="@+id/tv_dim_stability" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:padding="8dp" android:text="安定: 0" android:textColor="#0D9488" android:background="@drawable/bg_stat_pill"/>
-                </GridLayout>
+                    <LinearLayout
+                        android:id="@+id/growth_front"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/tv_level"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Lv.1"
+                            android:textStyle="bold"
+                            android:textSize="20sp"
+                            android:textColor="#111827"/>
+
+                        <ProgressBar
+                            android:id="@+id/progress_exp"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="10dp"
+                            android:layout_marginTop="8dp"
+                            android:progressTint="#F59E0B"
+                            android:max="100"
+                            android:progress="0"/>
+
+                        <TextView
+                            android:id="@+id/tv_points"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="EXP 0 / 120"
+                            android:textColor="#6B7280"
+                            android:layout_marginTop="6dp"/>
+
+                        <GridLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingTop="12dp"
+                            android:columnCount="3">
+
+                        <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginEnd="6dp"
+                        android:layout_marginBottom="8dp"
+                        android:padding="8dp"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_stat_pill">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="理解"
+                            android:textSize="11sp"
+                            android:textColor="#6B7280"/>
+                        <TextView
+                            android:id="@+id/tv_dim_understand"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="#16A34A"/>
+                    </LinearLayout>
+
+                        <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginEnd="6dp"
+                        android:layout_marginBottom="8dp"
+                        android:padding="8dp"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_stat_pill">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="質問"
+                            android:textSize="11sp"
+                            android:textColor="#6B7280"/>
+                        <TextView
+                            android:id="@+id/tv_dim_question"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="#2563EB"/>
+                    </LinearLayout>
+
+                        <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="8dp"
+                        android:padding="8dp"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_stat_pill">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="協力"
+                            android:textSize="11sp"
+                            android:textColor="#6B7280"/>
+                        <TextView
+                            android:id="@+id/tv_dim_collab"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="#7C3AED"/>
+                    </LinearLayout>
+
+                        <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginEnd="6dp"
+                        android:padding="8dp"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_stat_pill">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="参加"
+                            android:textSize="11sp"
+                            android:textColor="#6B7280"/>
+                        <TextView
+                            android:id="@+id/tv_dim_engagement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="#DB2777"/>
+                    </LinearLayout>
+
+                        <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginEnd="6dp"
+                        android:padding="8dp"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_stat_pill">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="安定"
+                            android:textSize="11sp"
+                            android:textColor="#6B7280"/>
+                        <TextView
+                            android:id="@+id/tv_dim_stability"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="#0D9488"/>
+                    </LinearLayout>
+
+                        <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_stat_pill">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="総EXP"
+                            android:textSize="11sp"
+                            android:textColor="#6B7280"/>
+                        <TextView
+                            android:id="@+id/tv_dim_total"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="#F59E0B"/>
+                    </LinearLayout>
+                        </GridLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/growth_back"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:gravity="center_horizontal"
+                        android:visibility="gone">
+
+                        <GridLayout
+                            android:id="@+id/grid_badges_back"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:columnCount="4"
+                            android:alignmentMode="alignMargins"
+                            android:useDefaultMargins="true"
+                            android:layout_gravity="center"/>
+                    </LinearLayout>
+
+                </FrameLayout>
             </androidx.cardview.widget.CardView>
+
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="2dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
                 app:cardBackgroundColor="#FFFFFF">
 
                 <LinearLayout
@@ -253,4 +417,23 @@
                 android:textSize="18sp"/>
         </LinearLayout>
     </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:background="@drawable/bg_icon_button"
+        android:src="@drawable/ic_settings_gear"
+        android:tint="#6B7280"
+        android:contentDescription="設定"
+        android:scaleType="centerInside"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="14dp"
+        android:padding="6dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="3dp"
+        android:translationZ="3dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
