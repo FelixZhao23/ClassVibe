@@ -366,6 +366,7 @@ class StudentViewModel: ObservableObject {
     @Published var showReactionSuccess: String? = nil
     @Published var showFeverEffect: Bool = false
     @Published var errorMessage: String? = nil
+    @Published var showClassEndedAlert: Bool = false
     
     // MARK: - 内部状态
     
@@ -625,25 +626,21 @@ class StudentViewModel: ObservableObject {
             
         case "lost":
             self.currentPetMood = .dizzy // ぜんぜんわからない
-        case "difficult", "panic", "unclear":
-            self.currentPetMood = .panic // 😭 触发 GIF
-            
-        case "slacking", "boring":
-            self.currentPetMood = .sleepy // 睡觉
+        case "difficult", "panic":
+            self.currentPetMood = .panic // 難しい GIF
+        case "unclear":
+            self.currentPetMood = .confused // ちょっとわからない GIF
+        
+        case "slacking":
+            self.currentPetMood = .sleepy // サボり中 GIF
+        case "boring":
+            self.currentPetMood = .bored // 面倒 GIF
             
         default:
             self.currentPetMood = .happy // 普通开心
         }
         
-        // (可选) 3秒后如果没有新的操作，变回普通开心状态
-        // 这样可以避免一直停留在“哭”或“晕”的状态
-        let originalType = type
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            // 只有当当前状态还是刚才设置的状态时才恢复 (防止覆盖了新的操作)
-            if self.currentPetMood != .sleepy && originalType != "sleep" {
-                 self.currentPetMood = .happy
-            }
-        }
+        // 现在改为：不自动恢复，保持当前表情循环播放
     }
     
     // MARK: - 课程进入逻辑
@@ -665,8 +662,8 @@ class StudentViewModel: ObservableObject {
             if let active = snapshot.value as? Bool, active == false {
                 DispatchQueue.main.async {
                     self.errorMessage = "授業が終了しました。"
-                    self.currentCourseId = nil
-                    self.currentCourseTitle = ""
+                    self.showClassEndedAlert = true
+                    self.leaveCourse()
                 }
             }
         }

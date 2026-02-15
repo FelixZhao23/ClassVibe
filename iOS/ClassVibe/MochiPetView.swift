@@ -11,36 +11,41 @@ struct MochiPetView: View {
     
     var config: (color: Color, msg: String) {
         switch mood {
-        case .sleepy: return (Color.gray.opacity(0.2), "zzZ...")
-        case .happy: return (Color.white, "听懂啦!")
-        case .superHappy: return (Color.yellow.opacity(0.2), "太棒了!")
-        case .confused: return (Color.orange.opacity(0.2), "嗯...?")
-        case .panic: return (Color.purple.opacity(0.2), "救命!") // 这里的文字可以根据 GIF 配合
-        case .dizzy: return (Color.purple.opacity(0.15), "うぅ…") // ぜんぜんわからない
+        case .sleepy: return (Color.gray.opacity(0.2), "サボり中")
+        case .bored: return (Color.gray.opacity(0.2), "面倒")
+        case .happy: return (Color.white, "よくわかった")
+        case .superHappy: return (Color.yellow.opacity(0.2), "よくわかった")
+        case .confused: return (Color.orange.opacity(0.2), "ちょっとわからない")
+        case .panic: return (Color.purple.opacity(0.2), "難しい")
+        case .dizzy: return (Color.purple.opacity(0.15), "ぜんぜんわからない")
         }
     }
     
     var body: some View {
         VStack {
-            // 1. 顶部气泡 (所有状态都保留气泡，看起来更统一)
-            Text(config.msg)
-                .font(.caption).bold()
-                .padding(8)
-                .background(Color.white)
-                .cornerRadius(10)
-                .shadow(radius: 2)
-                .offset(y: isBouncing ? -5 : 0)
-                // 如果是 GIF 状态，我们暂时不需要气泡跳动，或者你可以保留
-                .animation(mood == .panic ? nil : .easeInOut(duration: 1).repeatForever(autoreverses: true), value: isBouncing)
-            
-            // 2. 角色主体 (核心修改在这里！！！)
-            if mood == .panic {
-                // ============== GIF 模式 ==============
-                GifImage("cry") // ⚠️ 确保你的文件叫 cry.gif 且在项目目录里
-                    .frame(width: 160, height: 160) // 调整大小以匹配原来的尺寸
-                    .shadow(radius: 5) // 给 GIF 也加点阴影
+            // 1. 角色主体 (GIF 表情)
+            if mood == .superHappy {
+                GifImage("great")
+                    .frame(width: 160, height: 160)
+                    .shadow(radius: 5)
+            } else if mood == .panic {
+                GifImage("difficult")
+                    .frame(width: 160, height: 160)
+                    .shadow(radius: 5)
             } else if mood == .dizzy {
-                GifImage("dizzy") // ⚠️ 新增: dizzy.gif
+                GifImage("not_understand")
+                    .frame(width: 160, height: 160)
+                    .shadow(radius: 5)
+            } else if mood == .confused {
+                GifImage("why")
+                    .frame(width: 160, height: 160)
+                    .shadow(radius: 5)
+            } else if mood == .sleepy {
+                GifImage("lazy")
+                    .frame(width: 160, height: 160)
+                    .shadow(radius: 5)
+            } else if mood == .bored {
+                GifImage("troublesome")
                     .frame(width: 160, height: 160)
                     .shadow(radius: 5)
             } else {
@@ -109,9 +114,8 @@ struct MochiPetView: View {
                         }
                         .stroke(Color.black, lineWidth: 3)
                     )
-            case .superHappy: Text("⭐").font(.title2)
-            case .confused: Text("😵").font(.title2)
-            case .panic, .dizzy: EmptyView() // GIF 模式不需要画眼睛
+            case .superHappy, .confused, .panic, .dizzy, .sleepy, .bored:
+                EmptyView() // GIF 模式不需要画眼睛
             default:
                 Circle()
                     .fill(Color.black)
@@ -130,7 +134,8 @@ struct MochiPetView: View {
                     .trim(from: 0, to: 0.5)
                     .stroke(Color.black, lineWidth: 3)
                     .frame(width: 20, height: 20)
-            case .panic, .dizzy: EmptyView() // 同上，GIF 模式下不需要画嘴巴
+            case .superHappy, .confused, .panic, .dizzy, .sleepy, .bored:
+                EmptyView() // GIF 模式下不需要画嘴巴
             default:
                 Circle()
                     .stroke(Color.black, lineWidth: 3)
@@ -150,15 +155,13 @@ struct MochiPetView: View {
                 isBouncing = true
             }
             startBlinking()
-        case .confused: // 移除了 panic，因为 panic 现在是 GIF 自动播放
+        case .confused: // GIF 模式不需要额外动画
             withAnimation(.linear(duration: 0.1).repeatForever(autoreverses: true)) {
                 isShaking = true
             }
-        case .sleepy:
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                isBouncing = true
-            }
-        case .panic, .dizzy:
+        case .sleepy, .bored:
+            break
+        case .panic, .dizzy, .superHappy:
             // GIF 不需要额外的 SwiftUI 动画代码
             break
         }

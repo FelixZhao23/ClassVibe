@@ -62,7 +62,12 @@
                 <!-- Google ログインボタン (メイン) -->
                 <div class="space-y-6">
                     <button type="button" onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium py-4 px-4 rounded-xl hover:bg-gray-50 hover:border-blue-400 transition-all shadow-sm hover:shadow-md group transform active:scale-95 duration-200">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6 group-hover:scale-110 transition-transform" alt="Google">
+                        <svg class="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 48 48" aria-hidden="true">
+                            <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.5l6.8-6.8C35.8 2.4 30.2 0 24 0 14.6 0 6.4 5.1 2.5 12.6l7.9 6.1C12 13.1 17.6 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.5 24.6c0-1.7-.2-3.3-.5-4.9H24v9.3h12.7c-.6 3-2.3 5.6-4.8 7.3l7.4 5.7c4.3-4 7.2-9.9 7.2-17.4z"/>
+                            <path fill="#FBBC05" d="M10.4 28.7c-1-3-1-6.2 0-9.2l-7.9-6.1C-.9 17.9-.9 30.1 2.5 34.6l7.9-5.9z"/>
+                            <path fill="#34A853" d="M24 48c6.2 0 11.5-2 15.4-5.5l-7.4-5.7c-2 1.4-4.6 2.2-8 2.2-6.4 0-11.9-3.6-13.6-8.8l-7.9 5.9C6.4 42.9 14.6 48 24 48z"/>
+                        </svg>
                         <span class="text-base">Google アカウントでログイン</span>
                     </button>
                     

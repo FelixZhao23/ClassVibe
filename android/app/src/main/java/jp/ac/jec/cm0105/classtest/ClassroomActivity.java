@@ -64,6 +64,7 @@ public class ClassroomActivity extends AppCompatActivity {
     private String myUserId; // ★ 现在这个ID会保存在本地
     private String myUserName;
     private String myTeam = "red";
+    private boolean classEndedDialogShown = false;
     private long lastMetricAt = 0L;
     private String lastMetricKey = "";
     private int sameMetricChain = 0;
@@ -190,6 +191,7 @@ public class ClassroomActivity extends AppCompatActivity {
             pulseHighlight(btnEasy);
             handleFeedback(10);
             emoteQuestion.setVisibility(View.INVISIBLE);
+            showReactionGif(R.drawable.great);
             animateHappy();
             submitReaction("happy", "happy", () -> scoreIncrement.onClick(v));
         });
@@ -200,6 +202,7 @@ public class ClassroomActivity extends AppCompatActivity {
             pulseHighlight(btnHard);
             handleFeedback(-15);
             emoteQuestion.setVisibility(View.INVISIBLE);
+            showReactionGif(R.drawable.difficult);
             animateSad();
             submitReaction("confused", "confused", () -> scoreIncrement.onClick(v));
         });
@@ -217,7 +220,8 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setLayoutParams(params);
             emoteQuestion.setRotation(20);
 
-            animateLost(); // dizzy gif for ぜんぜんわからない
+            showReactionGif(R.drawable.not_understand);
+            animateLost(); // ぜんぜんわからない
             submitReaction("question", "question", () -> scoreIncrement.onClick(v));
         });
 
@@ -234,6 +238,7 @@ public class ClassroomActivity extends AppCompatActivity {
             emoteQuestion.setLayoutParams(params);
             emoteQuestion.setRotation(-20);
 
+            showReactionGif(R.drawable.why);
             animateConfused();
             submitReaction("amazing", "amazing", () -> scoreIncrement.onClick(v));
         });
@@ -244,6 +249,7 @@ public class ClassroomActivity extends AppCompatActivity {
             pulseHighlight(btnSlacking);
             handleFeedback(-5);
             emoteQuestion.setVisibility(View.INVISIBLE);
+            showReactionGif(R.drawable.lazy);
             animateSad();
             submitReaction("sleepy", "sleepy", () -> scoreIncrement.onClick(v));
         });
@@ -254,6 +260,7 @@ public class ClassroomActivity extends AppCompatActivity {
             pulseHighlight(btnBoring);
             handleFeedback(-5);
             emoteQuestion.setVisibility(View.INVISIBLE);
+            showReactionGif(R.drawable.troublesome);
             animateSad();
             submitReaction("bored", "bored", () -> scoreIncrement.onClick(v));
         });
@@ -536,9 +543,14 @@ public class ClassroomActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Boolean active = snapshot.getValue(Boolean.class);
-                if (Boolean.FALSE.equals(active)) {
-                    Toast.makeText(ClassroomActivity.this, "授業が終了しました", Toast.LENGTH_SHORT).show();
-                    finish();
+                if (Boolean.FALSE.equals(active) && !classEndedDialogShown) {
+                    classEndedDialogShown = true;
+                    new AlertDialog.Builder(ClassroomActivity.this)
+                            .setTitle("授業が終了しました")
+                            .setMessage("教室は終了しました。ホームに戻ります。")
+                            .setPositiveButton("OK", (d, w) -> leaveCourse())
+                            .setCancelable(false)
+                            .show();
                 }
             }
 
@@ -662,7 +674,7 @@ public class ClassroomActivity extends AppCompatActivity {
 
     private void animateLost() {
         startAction();
-        showDizzyGif();
+        showReactionGif(R.drawable.not_understand);
         eyeLeft.setImageResource(R.drawable.shape_eye_normal);
         eyeRight.setImageResource(R.drawable.shape_eye_normal);
         updateViewSize(eyeLeft, 10, 10);
@@ -703,7 +715,6 @@ public class ClassroomActivity extends AppCompatActivity {
 
     private void endAction() {
         isPerformingAction = false;
-        hideDizzyGif();
         if (isSleeping) setSleepingState(true);
         else {
             startBreathAnimation();
@@ -711,10 +722,13 @@ public class ClassroomActivity extends AppCompatActivity {
         }
     }
 
-    private void showDizzyGif() {
+    private void showReactionGif(int resId) {
         if (dizzyGif == null) return;
         try {
-            ImageDecoder.Source source = ImageDecoder.createSource(getResources(), R.drawable.dizzy);
+            if (dizzyDrawable != null) {
+                dizzyDrawable.stop();
+            }
+            ImageDecoder.Source source = ImageDecoder.createSource(getResources(), resId);
             AnimatedImageDrawable drawable = (AnimatedImageDrawable) ImageDecoder.decodeDrawable(source);
             dizzyDrawable = drawable;
             dizzyGif.setImageDrawable(drawable);
@@ -726,7 +740,7 @@ public class ClassroomActivity extends AppCompatActivity {
         }
     }
 
-    private void hideDizzyGif() {
+    private void hideReactionGif() {
         if (dizzyGif == null) return;
         if (dizzyDrawable != null) {
             dizzyDrawable.stop();

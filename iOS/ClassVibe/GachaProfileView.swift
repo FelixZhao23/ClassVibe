@@ -1,25 +1,24 @@
 import SwiftUI
-import PhotosUI
 import FirebaseAuth
 import FirebaseDatabase
 
 struct GachaProfileView: View {
     @ObservedObject var viewModel: StudentViewModel
-    @AppStorage("profile_avatar_path") private var avatarPath: String = ""
     @State private var titleText: String = "はじめの一歩"
     @State private var roleText: String = "student"
     @State private var expTotal: Int = 0
     @State private var dims: [String: Int] = [:]
-    @State private var logs: [(id: String, summary: String, hint: String, exp: Int, message: String)] = []
+    @State private var logs: [(id: String, summary: String, exp: Int, message: String)] = []
     @State private var loading = true
     @State private var showTitleLevelUp = false
     @State private var upgradedTitle = ""
     @State private var selectedBadge: BadgeInfo? = nil
     @State private var showBadgeDetail = false
-    @State private var selectedAvatarItem: PhotosPickerItem? = nil
-    @State private var avatarImage: UIImage? = nil
+    @State private var flippedStats: Set<String> = []
     @State private var showBadgeBack = false
     @State private var showAllLogs = false
+    @State private var frontHeight: CGFloat = 0
+    @State private var backHeight: CGFloat = 0
 
     private let dbRef = Database.database(url: "https://classvibe-2025-default-rtdb.asia-southeast1.firebasedatabase.app/").reference()
 
@@ -40,7 +39,6 @@ struct GachaProfileView: View {
                 }
             }
             .onAppear(perform: loadGrowth)
-            .onAppear(perform: loadAvatarFromDisk)
             .overlay(titleLevelUpOverlay)
             .overlay(badgeDetailOverlay)
         }
@@ -48,48 +46,6 @@ struct GachaProfileView: View {
 
     private var profileHeader: some View {
         VStack(spacing: 10) {
-            PhotosPicker(selection: $selectedAvatarItem, matching: .images, photoLibrary: .shared()) {
-                ZStack(alignment: .bottomTrailing) {
-                    Group {
-                        if let avatarImage = avatarImage {
-                            Image(uiImage: avatarImage)
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            Image(systemName: "person.crop.circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .foregroundColor(Color.gray.opacity(0.4))
-                                .padding(10)
-                        }
-                    }
-                    .frame(width: 96, height: 96)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
-
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(6)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Circle())
-                        .offset(x: -2, y: -2)
-                }
-            }
-            .onChange(of: selectedAvatarItem) { newItem in
-                guard let newItem = newItem else { return }
-                Task {
-                    if let data = try? await newItem.loadTransferable(type: Data.self),
-                       let uiImage = UIImage(data: data) {
-                        await MainActor.run {
-                            self.avatarImage = uiImage
-                        }
-                        saveAvatarToDisk(data: data)
-                    }
-                }
-            }
-
             Text(displayNameText()).font(.title3).bold()
         }
         .frame(maxWidth: .infinity)
@@ -101,13 +57,17 @@ struct GachaProfileView: View {
 
     private var growthFlipCard: some View {
         let rotation = showBadgeBack ? 180.0 : 0.0
+        let cardHeight = max(frontHeight, backHeight)
         return ZStack {
             growthFrontCard
                 .opacity(showBadgeBack ? 0 : 1)
+                .background(HeightReader { frontHeight = $0 })
             growthBackCard
                 .opacity(showBadgeBack ? 1 : 0)
                 .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                .background(HeightReader { backHeight = $0 })
         }
+        .frame(height: cardHeight > 0 ? cardHeight : nil)
         .rotation3DEffect(.degrees(rotation), axis: (x: 0, y: 1, z: 0))
         .animation(.spring(response: 0.45, dampingFraction: 0.86), value: showBadgeBack)
         .onTapGesture { showBadgeBack.toggle() }
@@ -125,14 +85,14 @@ struct GachaProfileView: View {
 
             VStack(spacing: 10) {
                 HStack {
-                    statCard("理解", "\(dims["understand", default: 0])", .green)
-                    statCard("困惑", "\(dims["question", default: 0])", .blue)
-                    statCard("協力", "\(dims["collab", default: 0])", .purple)
+                    statCard("understand", "理解", "\(dims["understand", default: 0])", .green, "よくわかった／ちょっとわからないの反応が増える")
+                    statCard("confusion", "困惑", "\(dims["question", default: 0])", .blue, "難しい／ぜんぜんわからない／ちょっとわからないの反応")
+                    statCard("collab", "協力", "\(dims["collab", default: 0])", .purple, "赤青対抗の貢献度")
                 }
                 HStack {
-                    statCard("参加", "\(dims["engagement", default: 0])", .pink)
-                    statCard("安定", "\(dims["stability", default: 0])", .teal)
-                    statCard("総EXP", "\(expTotal)", .orange)
+                    statCard("engagement", "参加", "\(dims["engagement", default: 0])", .pink, "全ての有効反応の量")
+                    statCard("stability", "安定", "\(dims["stability", default: 0])", .teal, "授業内で一定以上参加できたか")
+                    statCard("total", "総EXP", "\(expTotal)", .orange, "累計EXP（授業終了時に加算）")
                 }
             }
 
@@ -230,19 +190,19 @@ struct GachaProfileView: View {
     private var dimensionCards: some View {
         VStack(spacing: 10) {
             HStack {
-                statCard("理解", "\(dims["understand", default: 0])", .green)
-                statCard("困惑", "\(dims["question", default: 0])", .blue)
-                statCard("協力", "\(dims["collab", default: 0])", .purple)
+                statCard("understand", "理解", "\(dims["understand", default: 0])", .green, "よくわかった／ちょっとわからないの反応が増える")
+                statCard("confusion", "困惑", "\(dims["question", default: 0])", .blue, "難しい／ぜんぜんわからない／ちょっとわからないの反応")
+                statCard("collab", "協力", "\(dims["collab", default: 0])", .purple, "赤青対抗の貢献度")
             }
             HStack {
-                statCard("参加", "\(dims["engagement", default: 0])", .pink)
-                statCard("安定", "\(dims["stability", default: 0])", .teal)
-                statCard("総EXP", "\(expTotal)", .orange)
+                statCard("engagement", "参加", "\(dims["engagement", default: 0])", .pink, "全ての有効反応の量")
+                statCard("stability", "安定", "\(dims["stability", default: 0])", .teal, "授業内で一定以上参加できたか")
+                statCard("total", "総EXP", "\(expTotal)", .orange, "累計EXP（授業終了時に加算）")
             }
         }
     }
 
-    private func logRow(_ log: (id: String, summary: String, hint: String, exp: Int, message: String)) -> some View {
+    private func logRow(_ log: (id: String, summary: String, exp: Int, message: String)) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(log.summary).font(.subheadline).lineLimit(2)
@@ -252,25 +212,54 @@ struct GachaProfileView: View {
             if !log.message.isEmpty {
                 Text("💬 \(log.message)").font(.caption).foregroundColor(.gray)
             }
-            if !log.hint.isEmpty {
-                Text("次の目標: \(log.hint)").font(.caption).foregroundColor(.blue)
-            }
         }
         .padding(10)
         .background(Color.white)
         .cornerRadius(10)
     }
 
-    private func statCard(_ label: String, _ value: String, _ color: Color) -> some View {
-        VStack {
-            Text(label).font(.caption).foregroundColor(.gray)
-            Text(value).font(.headline).bold().foregroundColor(color)
+    private func statCard(_ key: String, _ label: String, _ value: String, _ color: Color, _ desc: String) -> some View {
+        let isFlipped = flippedStats.contains(key)
+        return ZStack {
+            if isFlipped {
+                Text(desc)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 6)
+            } else {
+                VStack {
+                    Text(label).font(.caption).foregroundColor(.gray)
+                    Text(value).font(.headline).bold().foregroundColor(color)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 68)
         .padding(.vertical, 12)
         .background(Color.white)
         .cornerRadius(12)
         .shadow(radius: 1)
+        .onTapGesture {
+            if isFlipped { flippedStats.remove(key) } else { flippedStats.insert(key) }
+        }
+    }
+
+    private struct HeightReader: View {
+        let onChange: (CGFloat) -> Void
+        var body: some View {
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(key: HeightKey.self, value: proxy.size.height)
+            }
+            .onPreferenceChange(HeightKey.self, perform: onChange)
+        }
+    }
+
+    private struct HeightKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = max(value, nextValue())
+        }
     }
 
     private func loadGrowth() {
@@ -313,15 +302,14 @@ struct GachaProfileView: View {
         }
 
         dbRef.child("users").child(uid).child("growth_logs").observeSingleEvent(of: .value) { snap in
-            var temp: [(id: String, summary: String, hint: String, exp: Int, message: String)] = []
+            var temp: [(id: String, summary: String, exp: Int, message: String)] = []
             let logsData = snap.value as? [String: Any] ?? [:]
             for (key, value) in logsData {
                 let row = value as? [String: Any] ?? [:]
                 let summary = row["summary"] as? String ?? "成長記録"
-                let hint = row["next_hint"] as? String ?? ""
                 let exp = row["exp_gain"] as? Int ?? Int((row["exp_gain"] as? Double) ?? 0)
                 let message = row["message"] as? String ?? ""
-                temp.append((id: key, summary: summary, hint: hint, exp: exp, message: message))
+                temp.append((id: key, summary: summary, exp: exp, message: message))
             }
             logs = Array(temp.sorted(by: { $0.id > $1.id }).prefix(20))
             loading = false
@@ -560,28 +548,6 @@ struct GachaProfileView: View {
         return "Student"
     }
 
-    private func avatarFileURL() -> URL? {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("profile_avatar.jpg")
-    }
-
-    private func loadAvatarFromDisk() {
-        guard let url = avatarFileURL(),
-              let data = try? Data(contentsOf: url),
-              !data.isEmpty,
-              let image = UIImage(data: data) else { return }
-        avatarImage = image
-        avatarPath = url.path
-    }
-
-    private func saveAvatarToDisk(data: Data) {
-        guard let url = avatarFileURL() else { return }
-        do {
-            try data.write(to: url, options: [.atomic])
-            avatarPath = url.path
-        } catch {
-            print("Save avatar failed: \(error.localizedDescription)")
-        }
-    }
 }
 
 private struct BadgeInfo: Identifiable {

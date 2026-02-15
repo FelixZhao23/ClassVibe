@@ -46,9 +46,9 @@
             
             <!-- 左側：戻る & タイトル & 参加コード -->
             <div class="flex items-center gap-4">
-                <a href="teacherbackground.php" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <button onclick="stopClass()" class="text-gray-400 hover:text-gray-600 transition-colors" title="授業終了">
                     <i class="fas fa-arrow-left text-xl"></i>
-                </a>
+                </button>
                 <div>
                     <div class="flex items-baseline gap-2">
                         <h1 class="text-xl font-bold text-gray-900 leading-tight" id="course-title">接続中...</h1>
@@ -96,18 +96,12 @@
                 
                 <!-- 🤖 Mochi-chan -->
                 <div id="mascot-card" class="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center relative min-h-[300px] transition-colors duration-500">
-                    <div id="mascot-bubble" class="bubble bg-white px-6 py-3 rounded-2xl shadow-md text-gray-700 font-bold mb-8 text-center animate-bounce z-10">準備はいいですか？</div>
                     <div class="relative z-10 scale-125 md:scale-150 transform transition-transform">
-                        <div id="mochi-body" class="w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 animate-breath">
-                            <div class="relative w-full h-full">
-                                <div id="mochi-eyes"></div>
-                                <div id="mochi-mouth" class="absolute left-1/2 transform -translate-x-1/2 border-slate-900 top-16 w-4 h-1 bg-slate-900 rounded-full"></div>
-                                <div id="mochi-cheeks"><div class="absolute top-16 left-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div><div class="absolute top-16 right-4 w-7 h-5 bg-pink-300 rounded-full opacity-60 blur-sm"></div></div>
-                            </div>
+                        <div class="w-40 h-40 flex items-center justify-center">
+                            <img id="mochi-gif" src="design/assets/emoji/great.gif" alt="Mochi" class="w-40 h-40 object-contain"/>
                         </div>
                         <div class="w-32 h-4 bg-black/20 rounded-full blur-md mt-4 mx-auto"></div>
                     </div>
-                    <div class="text-center mt-8"><span id="mascot-status-text" class="text-gray-400 font-bold text-lg">待機中...</span></div>
                 </div>
 
                 <!-- 🎮 クラスイベント -->
@@ -121,6 +115,11 @@
                             <div class="text-xs opacity-90 mt-1">授業開始から終了まで自動で累積します</div>
                         </div>
 
+                        <div class="bg-gradient-to-r from-emerald-500 to-lime-400 text-white rounded-xl p-4">
+                            <div class="font-bold">❤️ クラス集団HP（常時進行）</div>
+                            <div class="text-xs opacity-90 mt-1">どのボタンでもHP維持 / 無操作が続くとHP減少</div>
+                        </div>
+
                         <!-- 🆕 3. RealReaction Mode -->
                         <button onclick="startRealReaction()" id="real-reaction-btn" class="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl shadow hover:opacity-90 transition transform hover:-translate-y-1">
                             <div class="flex items-center">
@@ -132,6 +131,7 @@
                             </div>
                             <i class="fas fa-play-circle text-2xl"></i>
                         </button>
+
                     </div>
                 </div>
             </div>
@@ -181,7 +181,6 @@
                             <div class="relative w-full h-5 bg-gray-200 rounded-full overflow-hidden">
                                 <div id="class-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-lime-400 transition-all duration-300" style="width:100%"></div>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2">どのボタンでもHP維持 / 無操作が続くとHP減少</p>
                         </div>
                     </div>
                 </div>
@@ -353,7 +352,7 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const COURSE_ID = urlParams.get('courseId');
-        if (!COURSE_ID) { alert("ID Error"); window.location.href = "teacherbackground.php"; }
+        if (!COURSE_ID) { window.location.href = "teacherbackground.php"; }
 
         // Chart Setup
         const ctx = document.getElementById('reactionChart').getContext('2d');
@@ -398,6 +397,22 @@
         let realReactionData = { happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 };
         let votedStudents = new Set(); // 已投票的学生ID集合
 
+        // Mascot (GIF) state
+        const mascotGifs = {
+            happy: { src: 'design/assets/emoji/great.gif', duration: 2600, label: 'よくわかった' },
+            amazing: { src: 'design/assets/emoji/why.gif', duration: 5320, label: 'ちょっとわからない' },
+            confused: { src: 'design/assets/emoji/difficult.gif', duration: 7560, label: '難しい' },
+            question: { src: 'design/assets/emoji/not_understand.gif', duration: 2000, label: 'ぜんぜんわからない' },
+            sleepy: { src: 'design/assets/emoji/lazy.gif', duration: 1840, label: 'サボり中' },
+            bored: { src: 'design/assets/emoji/troublesome.gif', duration: 1000, label: '面倒' }
+        };
+        const mascotPriority = ['happy', 'confused', 'amazing', 'question', 'sleepy', 'bored'];
+        let mascotCurrentKey = 'happy';
+        let mascotTimer = null;
+        let mascotCycleCounts = { happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 };
+        let mascotPrevSnapshot = null;
+        let mascotInitialized = false;
+
         // 2. Firebase Listener
         courseRef.on('value', (snapshot) => {
             const data = snapshot.val();
@@ -419,10 +434,8 @@
                 }
                 
                 const active = data.active_students || {};
-                const members = data.members || {};
                 const activeCount = Object.keys(active).length;
-                const membersCount = Object.keys(members).length;
-                studentCount = Math.max(activeCount, membersCount);
+                studentCount = activeCount;
                 document.getElementById('active-student-count').innerText = studentCount;
 
                 // 🆕 更新RealReaction参加人数
@@ -436,6 +449,7 @@
                     confused: r.confused||0, question: r.question||0,
                     sleepy: r.sleepy||0, bored: r.bored||0 
                 };
+                recordMascotDeltas(curReacts);
                 updateDashboard();
                 hydratePersistentState(data);
                 applyReactionEffects(curReacts, data.student_metrics || {});
@@ -455,7 +469,10 @@
                 const el = document.getElementById('val-'+k);
                 if(el) el.innerText = curReacts[k];
             });
-            updateMascotState();
+            if (!mascotInitialized) {
+                mascotInitialized = true;
+                startMascotCycle(mascotCurrentKey);
+            }
         }
 
         function hydratePersistentState(data) {
@@ -520,8 +537,8 @@
             battleState.red = teamTotals.red;
             battleState.blue = teamTotals.blue;
 
-            // 互动导向：任何按钮都能为集体HP续命
-            const hpDelta = totalNew;
+            // 互动导向：任何按钮都能为集体HP续命（内部は小数、表示は整数）
+            const hpDelta = totalNew * 0.6;
 
             if (classHpState.current > 0) {
                 classHpState.current = Math.max(0, Math.min(classHpState.max, classHpState.current + hpDelta));
@@ -580,7 +597,7 @@
             const hpMax = classHpState.max || 200;
             const hpCur = Math.max(0, classHpState.current || 0);
             const hpPercent = Math.round((hpCur / hpMax) * 100);
-            document.getElementById('class-hp-text').innerText = `${hpCur} / ${hpMax}`;
+            document.getElementById('class-hp-text').innerText = `${Math.round(hpCur)} / ${hpMax}`;
             document.getElementById('class-hp-bar').style.width = `${hpPercent}%`;
 
             const badge = document.getElementById('class-hp-badge');
@@ -963,7 +980,7 @@
             const effective = toSafeNumber(metric.effective_interactions).toFixed(1);
             const question = toSafeNumber(metric.question_count);
             const subject = subjectText ? ` ${subjectText}` : '';
-            return `${dateStr}${subject} / 有効反応 ${effective} / 困惑 ${question}回`;
+            return `${dateStr}${subject} / 有効反応 ${effective}回 / 困惑 ${question}回`;
         }
 
         function calculateGrowthAward(metric, battleWinner, hpResult) {
@@ -1061,7 +1078,6 @@
                     exp_gain: award.exp,
                     gains: award.gains,
                     summary: logSummary,
-                    next_hint: "次回は困惑の合図を1回増やして称号を強化しよう",
                     message: messageText,
                     message_id: messageId,
                     message_category: category
@@ -1169,39 +1185,47 @@
         }
         function toggleFullScreenQR() { document.getElementById('qr-modal').classList.toggle('hidden'); }
 
-        // Update Mascot
-        function updateMascotState() {
-            const p = curReacts.happy + curReacts.amazing;
-            const n = curReacts.confused + curReacts.question;
-            const o = curReacts.sleepy + curReacts.bored;
-            const t = p + n + o;
-            
-            let state = 'neutral';
-            if (t === 0) state = 'sleepy';
-            else if (o > t * 0.3) state = 'sleepy';
-            else if (curReacts.amazing > t * 0.2) state = 'super-happy';
-            else if (n > p * 0.5) state = (n > 10 && curReacts.question > curReacts.confused) ? 'panic' : 'confused';
-            else state = 'happy';
-
-            const config = {
-                'super-happy': { c: 'bg-yellow-100', a: 'animate-bounce-fast', e: '⭐' },
-                'happy': { c: 'bg-green-100', a: 'animate-bounce-slow', e: '😊' },
-                'neutral': { c: 'bg-white', a: 'animate-breath', e: '😐' },
-                'confused': { c: 'bg-orange-100', a: 'animate-shake-gentle', e: '😵' },
-                'panic': { c: 'bg-purple-100', a: 'animate-shake-hard', e: '😱' },
-                'sleepy': { c: 'bg-indigo-50', a: 'animate-float', e: '😴' }
-            }[state];
-
-            document.getElementById('mascot-card').className = `rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center relative flex-1 min-h-[350px] transition-colors duration-500 ${config.c}`;
-            document.getElementById('mochi-body').className = `w-40 h-32 bg-white rounded-[40%] border-[5px] border-slate-900 relative flex items-center justify-center shadow-2xl transition-all duration-300 ${config.a}`;
-            
-            const eyes = document.getElementById('mochi-eyes');
-            if (state === 'happy' || state === 'sleepy') {
-                eyes.innerHTML = '<div class="absolute top-10 left-8 w-6 h-4 border-t-[5px] border-slate-900 rounded-full"></div><div class="absolute top-10 right-8 w-6 h-4 border-t-[5px] border-slate-900 rounded-full"></div>';
-            } else {
-                eyes.innerHTML = `<div class="text-4xl absolute top-8 left-8">${config.e}</div><div class="text-4xl absolute top-8 right-8">${config.e}</div>`;
+        // Mascot (GIF) logic: complete animation, then choose next by max in cycle
+        function recordMascotDeltas(nextReacts) {
+            if (!mascotPrevSnapshot) {
+                mascotPrevSnapshot = { ...nextReacts };
+                return;
             }
-            document.getElementById('mascot-status-text').innerText = state.toUpperCase();
+            ['happy','amazing','confused','question','sleepy','bored'].forEach(k => {
+                const delta = Math.max(0, (nextReacts[k] || 0) - (mascotPrevSnapshot[k] || 0));
+                mascotCycleCounts[k] += delta;
+            });
+            mascotPrevSnapshot = { ...nextReacts };
+        }
+
+        function startMascotCycle(key) {
+            mascotCurrentKey = key;
+            setMascotGif(key);
+            const duration = mascotGifs[key]?.duration || 2000;
+            clearTimeout(mascotTimer);
+            mascotTimer = setTimeout(() => {
+                const nextKey = pickNextMascotKey();
+                mascotCycleCounts = { happy:0, amazing:0, confused:0, question:0, sleepy:0, bored:0 };
+                startMascotCycle(nextKey);
+            }, duration);
+        }
+
+        function pickNextMascotKey() {
+            let max = 0;
+            mascotPriority.forEach(k => { if (mascotCycleCounts[k] > max) max = mascotCycleCounts[k]; });
+            if (max === 0) return mascotCurrentKey;
+            for (const k of mascotPriority) {
+                if (mascotCycleCounts[k] === max) return k;
+            }
+            return mascotCurrentKey;
+        }
+
+        function setMascotGif(key) {
+            const img = document.getElementById('mochi-gif');
+            const config = mascotGifs[key] || mascotGifs.happy;
+            if (img) {
+                img.src = `${config.src}?t=${Date.now()}`;
+            }
         }
 
         // Chart Loop (リアルタイム表示: 上がって、無操作で減衰)
@@ -1214,6 +1238,12 @@
             if (chart.data.labels.length > 30) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); chart.data.datasets[1].data.shift(); }
             chart.update();
         }, 2000);
+
+        // Close/refresh confirm
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = '';
+        });
     </script>
 </body>
 </html>

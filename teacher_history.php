@@ -6,15 +6,17 @@
     <title>授業履歴 - ClassVibe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
 
     <style>
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #F3F4F6; }
-        
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #F8FAFC; }
+        .sidebar-link.active { background-color: #Eff6FF; color: #2563EB; border-right: 3px solid #2563EB; }
+
+        /* Flatpickr Customization */
         .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
             background: #2563eb !important;
             border-color: #2563eb !important;
@@ -27,20 +29,75 @@
         }
     </style>
 </head>
-<body class="text-gray-800 invisible" id="main-body">
+<body class="text-slate-800 antialiased invisible" id="main-body">
 
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <i class="fas fa-history text-blue-500"></i> 授業履歴
-            </h1>
-            <a href="teacherbackground.php" class="text-gray-500 hover:text-blue-600 font-medium transition flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> コース一覧に戻る
-            </a>
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col">
+        <!-- Brand -->
+        <div class="h-20 flex items-center px-8 border-b border-slate-50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">CV</div>
+                <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600">ClassVibe</span>
+            </div>
         </div>
-    </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-8">
+        <!-- Navigation -->
+        <nav class="flex-1 p-6 space-y-2 overflow-y-auto">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-3">Main Menu</div>
+            
+            <a href="teacherbackground.php" class="sidebar-link text-slate-500 hover:text-slate-900 hover:bg-slate-50 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group">
+                <i class="fas fa-th-large w-5 text-center group-hover:scale-110 transition-transform"></i>
+                ダッシュボード
+            </a>
+            <a href="#" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group">
+                <i class="fas fa-history w-5 text-center group-hover:scale-110 transition-transform"></i>
+                履歴・アーカイブ
+            </a>
+
+            <a href="javascript:void(0)" onclick="openSettingsModal()" class="sidebar-link text-slate-500 hover:text-slate-900 hover:bg-slate-50 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group">
+                <i class="fas fa-cog w-5 text-center"></i>
+                設定
+            </a>
+        </nav>
+
+        <!-- User Profile (Bottom) -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white hover:shadow-sm transition-all cursor-pointer group relative">
+                <img id="sidebar-avatar" src="" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover bg-slate-200">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-slate-800 truncate" id="sidebar-name">Loading...</p>
+                    <p class="text-xs text-slate-500">Teacher Account</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="lg:ml-72 min-h-screen flex flex-col transition-all duration-300">
+        
+        <!-- Header -->
+        <header class="h-20 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/50">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold text-slate-800 hidden sm:block">履歴・アーカイブ</h1>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <!-- Date Display -->
+                <div class="hidden md:flex flex-col items-end mr-4">
+                    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider" id="current-day">Loading...</span>
+                    <span class="text-sm font-bold text-slate-700" id="current-date">Loading...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body -->
+        <main class="flex-1 p-6 lg:p-10 max-w-5xl mx-auto w-full">
         
         <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
             <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">検索条件</h2>
@@ -165,11 +222,49 @@
             <p class="text-lg">コースと日付を選択して<br>過去の授業データを表示します。</p>
         </div>
 
-    </main>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="settings-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0" id="settings-backdrop" onclick="closeSettingsModal()"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div id="settings-panel" class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md opacity-0 translate-y-4 scale-95">
+                    
+                    <div class="bg-slate-50 px-4 py-3 sm:px-6 flex justify-between items-center border-b border-slate-100">
+                        <h3 class="text-lg font-bold leading-6 text-slate-900" id="settings-title">アカウント設定</h3>
+                        <button type="button" class="text-slate-400 hover:text-slate-600 transition-colors" onclick="closeSettingsModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="settings-form" onsubmit="handleUpdateProfile(event)">
+                        <div class="px-6 py-6 space-y-5">
+                            <div>
+                                <label for="input-display-name" class="block text-sm font-medium leading-6 text-slate-900 mb-1">表示名</label>
+                                <input type="text" id="input-display-name" class="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all">
+                            </div>
+                            <div>
+                                <label for="input-photo-url" class="block text-sm font-medium leading-6 text-slate-900 mb-1">アイコンURL (任意)</label>
+                                <input type="url" id="input-photo-url" class="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all" placeholder="https://...">
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
+                            <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all">保存する</button>
+                            <button type="button" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all" onclick="closeSettingsModal()">キャンセル</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA-xTpcCeCzQpa1sOjgC6EFMPvAvQeX5jg",
@@ -178,6 +273,7 @@
             projectId: "classvibe-2025", 
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.database();
 
         let calendarInstance = null;
@@ -185,9 +281,111 @@
         let dateSessionsMap = {}; // 日期 -> Session数组的映射
 
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('main-body').classList.remove('invisible');
-            loadCourses();
+             updateDate();
+             
+             auth.onAuthStateChanged((user) => {
+                if (user) {
+                    updateUserProfile(user);
+                    document.getElementById('main-body').classList.remove('invisible');
+                    loadCourses();
+                } else {
+                    window.location.href = "login.php";
+                }
+             });
         });
+
+        // Date Display
+        function updateDate() {
+            const now = new Date();
+            const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+            const dateStr = now.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('current-day').innerText = days[now.getDay()];
+            document.getElementById('current-date').innerText = dateStr;
+        }
+
+        function updateUserProfile(user) {
+            document.getElementById('sidebar-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=random`;
+            document.getElementById('sidebar-name').innerText = user.displayName || user.email;
+        }
+
+        // Toggle Sidebar (Mobile)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const isClosed = sidebar.classList.contains('-translate-x-full');
+            
+            if (isClosed) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // --- Settings Modal ---
+        function openSettingsModal() {
+            const user = auth.currentUser;
+            if (user) {
+                document.getElementById('input-display-name').value = user.displayName || "";
+                document.getElementById('input-photo-url').value = user.photoURL || "";
+            }
+
+            const modal = document.getElementById('settings-modal');
+            const backdrop = document.getElementById('settings-backdrop');
+            const panel = document.getElementById('settings-panel');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+                panel.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+            }, 10);
+        }
+
+        function closeSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            const backdrop = document.getElementById('settings-backdrop');
+            const panel = document.getElementById('settings-panel');
+            
+            backdrop.classList.add('opacity-0');
+            panel.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+            panel.classList.add('opacity-0', 'translate-y-4', 'scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const name = document.getElementById('input-display-name').value;
+            const photo = document.getElementById('input-photo-url').value;
+            const btn = e.target.querySelector('button[type="submit"]');
+            
+            btn.disabled = true;
+            btn.innerText = "保存中...";
+
+            try {
+                await user.updateProfile({
+                    displayName: name,
+                    photoURL: photo
+                });
+                updateUserProfile(user); // Update UI immediately
+                closeSettingsModal();
+                alert("プロフィールを更新しました");
+            } catch (error) {
+                alert("更新に失敗しました: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "保存する";
+            }
+        }
 
         function loadCourses() {
             const select = document.getElementById('course-select');
@@ -196,9 +394,11 @@
                 const data = snapshot.val();
                 if (data) {
                     Object.entries(data).forEach(([key, val]) => {
+                        const title = val?.name || val?.title || "";
+                        if (val?.deleted === true || !title || title === "名称未設定") return;
                         const opt = document.createElement('option');
                         opt.value = key;
-                        opt.text = val.name || val.title || "名称未設定";
+                        opt.text = title;
                         select.appendChild(opt);
                     });
                 } else {

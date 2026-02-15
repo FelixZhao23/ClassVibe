@@ -52,6 +52,7 @@ enum Team {
 // ==========================================
 enum PetMood {
     case sleepy     // 没人按 (睡觉)
+    case bored      // 面倒
     case happy      // 正常 (开心)
     case superHappy // 气氛热烈 (星星眼)
     case confused   // 困惑 (晕)

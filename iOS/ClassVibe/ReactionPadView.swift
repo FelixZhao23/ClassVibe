@@ -66,6 +66,11 @@ struct ReactionPadView: View {
         } message: {
             Text("退出すると参加状態が解除されます。")
         }
+        .alert("授業が終了しました", isPresented: $viewModel.showClassEndedAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("教室は終了しました。ホームに戻ります。")
+        }
     }
 
     private var joinView: some View {

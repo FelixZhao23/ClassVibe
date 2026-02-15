@@ -3,7 +3,6 @@ package jp.ac.jec.cm0105.classtest;
 import android.os.Bundle;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.ImageView;
@@ -21,9 +20,6 @@ import android.animation.ObjectAnimator;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -39,8 +35,6 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView tvName, tvLevel, tvPoints, tvLogs;
     private TextView tvUnderstand, tvQuestion, tvCollab, tvEngagement, tvStability, tvTotal;
     private TextView tvTitleUpgradeName;
-    private ImageView imgAvatar;
-    private ImageView imgAvatarEdit;
     private GridLayout gridBadgesBack;
     private View cardGrowth;
     private View growthFront;
@@ -52,10 +46,8 @@ public class ProfileActivity extends AppCompatActivity {
     private String userId;
     private ImageButton btnSettings;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
-    private ActivityResultLauncher<String> avatarPicker;
     private static final String PREFS = "classvibe_prefs";
     private static final String KEY_LAST_NAME = "last_student_name";
-    private static final String KEY_AVATAR_URI = "profile_avatar_uri";
     private int currentLevel = 1;
 
     private DatabaseReference userRef;
@@ -104,13 +96,10 @@ public class ProfileActivity extends AppCompatActivity {
         userListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                String role = snapshot.child("role").getValue(String.class);
                 String displayName = snapshot.child("name").getValue(String.class);
                 if (displayName != null && !displayName.isEmpty()) tvName.setText(displayName);
                 String nextTitle = snapshot.child("growth").child("title_current").getValue(String.class);
                 maybeShowTitleUpgrade(nextTitle == null ? "はじめの一歩" : nextTitle);
-
-                applyDefaultAvatarIfNeeded(role);
 
                 int exp = toInt(snapshot.child("growth").child("exp_total").getValue());
                 LevelInfo info = levelFromExp(exp);
@@ -141,16 +130,12 @@ public class ProfileActivity extends AppCompatActivity {
                 List<String> rows = new ArrayList<>();
                 for (DataSnapshot child : logsSnap.getChildren()) {
                     String summary = child.child("summary").getValue(String.class);
-                    String hint = child.child("next_hint").getValue(String.class);
                     String message = child.child("message").getValue(String.class);
                     int gain = toInt(child.child("exp_gain").getValue());
                     StringBuilder row = new StringBuilder();
                     row.append("・").append(summary == null ? "成長記録" : summary).append("  (+").append(gain).append(" EXP)");
                     if (message != null && !message.isEmpty()) {
                         row.append("\n  💬 ").append(message);
-                    }
-                    if (hint != null && !hint.isEmpty()) {
-                        row.append("\n  次: ").append(hint);
                     }
                     rows.add(row.toString());
                     if (rows.size() >= 10) break;
@@ -169,8 +154,6 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void bindViews() {
-        imgAvatar = findViewById(R.id.img_role_avatar);
-        imgAvatarEdit = findViewById(R.id.img_avatar_edit);
         tvName = findViewById(R.id.tv_profile_name);
         tvLevel = findViewById(R.id.tv_level);
         tvPoints = findViewById(R.id.tv_points);
@@ -190,11 +173,12 @@ public class ProfileActivity extends AppCompatActivity {
         growthFront = findViewById(R.id.growth_front);
         growthBack = findViewById(R.id.growth_back);
         gridBadgesBack = findViewById(R.id.grid_badges_back);
-        avatarPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-            if (uri == null) return;
-            saveAvatarUri(uri);
-            imgAvatar.setImageURI(uri);
-        });
+        View cardUnderstand = findViewById(R.id.card_dim_understand);
+        View cardConfusion = findViewById(R.id.card_dim_confusion);
+        View cardCollab = findViewById(R.id.card_dim_collab);
+        View cardEngagement = findViewById(R.id.card_dim_engagement);
+        View cardStability = findViewById(R.id.card_dim_stability);
+        View cardTotal = findViewById(R.id.card_dim_total);
 
         if (btnSettings != null) {
             btnSettings.setOnClickListener(v -> {
@@ -204,13 +188,43 @@ public class ProfileActivity extends AppCompatActivity {
         }
         setupGrowthFlip();
         populateBadgeGridForTest(0, 0, 0, 0, 0);
-        if (imgAvatar != null) {
-            imgAvatar.setOnClickListener(v -> avatarPicker.launch("image/*"));
-            loadAvatarFromPrefs();
-        }
-        if (imgAvatarEdit != null) {
-            imgAvatarEdit.setOnClickListener(v -> avatarPicker.launch("image/*"));
-        }
+
+        setupStatFlip(
+                cardUnderstand,
+                findViewById(R.id.tv_dim_understand_label),
+                tvUnderstand,
+                findViewById(R.id.tv_dim_understand_desc)
+        );
+        setupStatFlip(
+                cardConfusion,
+                findViewById(R.id.tv_dim_question_label),
+                tvQuestion,
+                findViewById(R.id.tv_dim_question_desc)
+        );
+        setupStatFlip(
+                cardCollab,
+                findViewById(R.id.tv_dim_collab_label),
+                tvCollab,
+                findViewById(R.id.tv_dim_collab_desc)
+        );
+        setupStatFlip(
+                cardEngagement,
+                findViewById(R.id.tv_dim_engagement_label),
+                tvEngagement,
+                findViewById(R.id.tv_dim_engagement_desc)
+        );
+        setupStatFlip(
+                cardStability,
+                findViewById(R.id.tv_dim_stability_label),
+                tvStability,
+                findViewById(R.id.tv_dim_stability_desc)
+        );
+        setupStatFlip(
+                cardTotal,
+                findViewById(R.id.tv_dim_total_label),
+                tvTotal,
+                findViewById(R.id.tv_dim_total_desc)
+        );
     }
 
     private void maybeShowTitleUpgrade(String nextTitle) {
@@ -455,35 +469,20 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void saveAvatarUri(Uri uri) {
-        try {
-            getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        } catch (Exception ignored) { }
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        prefs.edit().putString(KEY_AVATAR_URI, uri.toString()).apply();
-    }
-
-    private void loadAvatarFromPrefs() {
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        String uriString = prefs.getString(KEY_AVATAR_URI, null);
-        if (uriString == null || uriString.isEmpty()) return;
-        try {
-            Uri uri = Uri.parse(uriString);
-            imgAvatar.setImageURI(uri);
-        } catch (Exception ignored) { }
-    }
-
-    private void applyDefaultAvatarIfNeeded(String role) {
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        String uriString = prefs.getString(KEY_AVATAR_URI, null);
-        if (uriString != null && !uriString.isEmpty()) return;
-        if ("teacher".equals(role)) {
-            imgAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
-            imgAvatar.setColorFilter(0xFF4F46E5);
-        } else {
-            imgAvatar.setImageResource(android.R.drawable.ic_menu_info_details);
-            imgAvatar.setColorFilter(0xFF2563EB);
-        }
+    private void setupStatFlip(View card, TextView label, TextView value, TextView desc) {
+        if (card == null || label == null || value == null || desc == null) return;
+        card.setOnClickListener(v -> {
+            boolean showingDesc = desc.getVisibility() == View.VISIBLE;
+            if (showingDesc) {
+                desc.setVisibility(View.GONE);
+                label.setVisibility(View.VISIBLE);
+                value.setVisibility(View.VISIBLE);
+            } else {
+                label.setVisibility(View.GONE);
+                value.setVisibility(View.GONE);
+                desc.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     @Override

@@ -1,0 +1,11 @@
+android/
+iOS/
+webshop/
+webshop 2/
+webshop 2.zip
+.git/
+.DS_Store
+**/.DS_Store
+**/*.zip
+**/*.apk
+**/*.aab

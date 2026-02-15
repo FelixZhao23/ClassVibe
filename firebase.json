@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "*.php",
+      "**/.*",
+      "**/node_modules/**",
+      "android/**",
+      "iOS/**",
+      "webshop/**",
+      "webshop 2/**",
+      "webshop 2.zip"
+    ]
+  }
+}
