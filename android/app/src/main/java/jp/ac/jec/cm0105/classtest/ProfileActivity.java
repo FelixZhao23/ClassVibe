@@ -133,7 +133,8 @@ public class ProfileActivity extends AppCompatActivity {
                     String message = child.child("message").getValue(String.class);
                     int gain = toInt(child.child("exp_gain").getValue());
                     StringBuilder row = new StringBuilder();
-                    row.append("・").append(summary == null ? "成長記録" : summary).append("  (+").append(gain).append(" EXP)");
+                    String normalized = normalizeSummary(summary == null ? "成長記録" : summary);
+                    row.append("・").append(normalized).append("  (+").append(gain).append(" EXP)");
                     if (message != null && !message.isEmpty()) {
                         row.append("\n  💬 ").append(message);
                     }
@@ -225,6 +226,13 @@ public class ProfileActivity extends AppCompatActivity {
                 tvTotal,
                 findViewById(R.id.tv_dim_total_desc)
         );
+    }
+
+    private String normalizeSummary(String summary) {
+        if (summary == null) return "成長記録";
+        // Ensure "有効反応 N(.N)" -> "有効反応 N(.N)回" when missing
+        if (summary.matches(".*有効反応\\s*\\d+(?:\\.\\d+)?回.*")) return summary;
+        return summary.replaceAll("有効反応\\s*(\\d+(?:\\.\\d+)?)\\b(?!回)", "有効反応 $1回");
     }
 
     private void maybeShowTitleUpgrade(String nextTitle) {

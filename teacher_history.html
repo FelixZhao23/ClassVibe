@@ -178,7 +178,7 @@
                 <h3 class="font-bold text-amber-700 mb-4 flex items-center gap-2">
                     <i class="fas fa-flag-checkered"></i> 授業終了時の結算
                 </h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white rounded-xl p-4 border border-amber-100">
                         <div class="text-xs text-amber-500 font-bold">赤青対抗戦</div>
                         <div class="mt-2 text-sm text-gray-600">
@@ -194,11 +194,6 @@
                             <span id="st-hp-remaining">0</span> / <span id="st-hp-max">0</span>
                         </div>
                         <div class="mt-1 text-sm font-bold" id="st-hp-result">-</div>
-                    </div>
-                    <div class="bg-white rounded-xl p-4 border border-amber-100">
-                        <div class="text-xs text-amber-500 font-bold">ポイント清算</div>
-                        <div class="mt-2 text-sm text-gray-600">報酬: <span class="font-black text-emerald-600" id="st-reward">+0</span></div>
-                        <div class="mt-1 text-sm text-gray-600">ペナルティ: <span class="font-black text-red-500" id="st-penalty">-0</span></div>
                     </div>
                 </div>
             </div>
@@ -614,8 +609,6 @@
                     document.getElementById('st-hp-result').innerText =
                         (hp?.result === 'survived') ? '生存成功' : ((hp?.result === 'failed') ? 'HP 0 で失敗' : '-');
 
-                    document.getElementById('st-reward').innerText = `+${settlement?.reward_points ?? 0}`;
-                    document.getElementById('st-penalty').innerText = `-${settlement?.penalty_points ?? 0}`;
                     document.getElementById('settlement-stats').classList.remove('hidden');
                 } else {
                     document.getElementById('settlement-stats').classList.add('hidden');

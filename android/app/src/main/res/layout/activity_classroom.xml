@@ -96,12 +96,14 @@
             android:layout_width="match_parent"
             android:layout_height="130dp"
             android:layout_gravity="top"
-            android:background="@drawable/shape_mochi_body"/>
+            android:background="@drawable/shape_mochi_body"
+            android:visibility="gone"/>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/mochi_face"
             android:layout_width="match_parent"
-            android:layout_height="130dp">
+            android:layout_height="130dp"
+            android:visibility="gone">
 
             <View
                 android:id="@+id/blush_left"
@@ -212,14 +214,14 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="22dp"
-        android:paddingTop="28dp"
-        android:paddingBottom="36dp"> <TextView
+        android:paddingTop="20dp"
+        android:paddingBottom="28dp"> <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="リアクション"
         android:textStyle="bold"
         android:textColor="#64748B"
-        android:layout_marginBottom="14dp"/>
+        android:layout_marginBottom="10dp"/>
 
         <GridLayout
             android:layout_width="match_parent"

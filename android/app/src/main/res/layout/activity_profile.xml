@@ -122,7 +122,7 @@
                         <LinearLayout
                         android:id="@+id/card_dim_understand"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="92dp"
                         android:layout_columnWeight="1"
                         android:layout_marginEnd="6dp"
                         android:layout_marginBottom="8dp"
@@ -153,13 +153,15 @@
                             android:textSize="11sp"
                             android:textColor="#6B7280"
                             android:gravity="center"
+                            android:maxLines="3"
+                            android:ellipsize="end"
                             android:visibility="gone"/>
                     </LinearLayout>
 
                         <LinearLayout
                         android:id="@+id/card_dim_confusion"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="92dp"
                         android:layout_columnWeight="1"
                         android:layout_marginEnd="6dp"
                         android:layout_marginBottom="8dp"
@@ -190,13 +192,15 @@
                             android:textSize="11sp"
                             android:textColor="#6B7280"
                             android:gravity="center"
+                            android:maxLines="3"
+                            android:ellipsize="end"
                             android:visibility="gone"/>
                     </LinearLayout>
 
                         <LinearLayout
                         android:id="@+id/card_dim_collab"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="92dp"
                         android:layout_columnWeight="1"
                         android:layout_marginBottom="8dp"
                         android:padding="8dp"
@@ -226,13 +230,15 @@
                             android:textSize="11sp"
                             android:textColor="#6B7280"
                             android:gravity="center"
+                            android:maxLines="3"
+                            android:ellipsize="end"
                             android:visibility="gone"/>
                     </LinearLayout>
 
                         <LinearLayout
                         android:id="@+id/card_dim_engagement"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="92dp"
                         android:layout_columnWeight="1"
                         android:layout_marginEnd="6dp"
                         android:padding="8dp"
@@ -262,13 +268,15 @@
                             android:textSize="11sp"
                             android:textColor="#6B7280"
                             android:gravity="center"
+                            android:maxLines="3"
+                            android:ellipsize="end"
                             android:visibility="gone"/>
                     </LinearLayout>
 
                         <LinearLayout
                         android:id="@+id/card_dim_stability"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="92dp"
                         android:layout_columnWeight="1"
                         android:layout_marginEnd="6dp"
                         android:padding="8dp"
@@ -298,13 +306,15 @@
                             android:textSize="11sp"
                             android:textColor="#6B7280"
                             android:gravity="center"
+                            android:maxLines="3"
+                            android:ellipsize="end"
                             android:visibility="gone"/>
                     </LinearLayout>
 
                         <LinearLayout
                         android:id="@+id/card_dim_total"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="92dp"
                         android:layout_columnWeight="1"
                         android:padding="8dp"
                         android:orientation="vertical"
@@ -333,6 +343,8 @@
                             android:textSize="11sp"
                             android:textColor="#6B7280"
                             android:gravity="center"
+                            android:maxLines="3"
+                            android:ellipsize="end"
                             android:visibility="gone"/>
                     </LinearLayout>
                         </GridLayout>

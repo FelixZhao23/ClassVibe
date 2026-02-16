@@ -145,6 +145,9 @@ public class ClassroomActivity extends AppCompatActivity {
             btnLeaveRoom.setOnClickListener(v -> showLeaveConfirm());
         }
 
+        // Default to showing a GIF so the mascot is visible immediately
+        showReactionGif(R.drawable.great);
+
         chooseBalancedTeamAndStart();
     }
 

@@ -342,6 +342,7 @@ import FirebaseAuth
 import AVFoundation
 
 class StudentViewModel: ObservableObject {
+    static let classEndedNotification = Notification.Name("ClassVibeClassEnded")
     
     // MARK: - Published 属性
     
@@ -662,8 +663,8 @@ class StudentViewModel: ObservableObject {
             if let active = snapshot.value as? Bool, active == false {
                 DispatchQueue.main.async {
                     self.errorMessage = "授業が終了しました。"
-                    self.showClassEndedAlert = true
                     self.leaveCourse()
+                    NotificationCenter.default.post(name: StudentViewModel.classEndedNotification, object: nil)
                 }
             }
         }

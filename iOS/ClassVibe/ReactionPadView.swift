@@ -12,6 +12,7 @@ struct ReactionPadView: View {
     @State private var isShowingScanner = false
     @State private var isJoining = false
     @State private var previewCourseTitle: String = ""
+    @State private var showClassEndedAlert = false
     
     var teamBackground: some View {
         switch viewModel.gameMode {
@@ -66,10 +67,16 @@ struct ReactionPadView: View {
         } message: {
             Text("退出すると参加状態が解除されます。")
         }
-        .alert("授業が終了しました", isPresented: $viewModel.showClassEndedAlert) {
+        .alert("授業が終了しました", isPresented: Binding(
+            get: { showClassEndedAlert },
+            set: { showClassEndedAlert = $0 }
+        )) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("教室は終了しました。ホームに戻ります。")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ClassVibeClassEnded"))) { _ in
+            showClassEndedAlert = true
         }
     }
 
@@ -130,91 +137,113 @@ struct ReactionPadView: View {
     }
 
     private var classroomView: some View {
-        VStack(spacing: 0) {
-            VStack {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(viewModel.currentCourseTitle.isEmpty ? "教室" : viewModel.currentCourseTitle)
-                            .font(.headline).bold().foregroundColor(.primary)
-                        Text(viewModel.myTeam == .red ? "RED TEAM" : "BLUE TEAM")
-                            .font(.caption).bold()
-                            .padding(.horizontal, 10).padding(.vertical, 4)
-                            .background(viewModel.myTeam == .red ? Color.red.opacity(0.18) : Color.blue.opacity(0.18))
-                            .cornerRadius(10)
-                            .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
-                    }
-                    Spacer()
-                    Button("退室") { showLeaveAlert = true }
-                        .font(.subheadline).bold()
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Color.white.opacity(0.85))
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal)
-
-                Spacer()
-                MochiPetView(mood: viewModel.currentPetMood)
-                    .frame(height: 180)
-                .padding(.bottom, 16)
-                Spacer(minLength: 12)
-            }
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-            .background(teamGradientBackground)
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("リアクション")
-                    .font(.headline)
-                    .foregroundColor(Color.gray)
-                    .padding(.horizontal, 22)
-
-                let buttons = [
-                    ("understood", "⭕️", "よくわかった", Color.green),
-                    ("difficult", "🤯", "難しい", Color(red: 0.8, green: 0.2, blue: 0.2)),
-                    ("lost", "🌀", "ぜんぜん\nわからない", Color.red),
-                    ("unclear", "🤔", "ちょっと\nわからない", Color.orange),
-                    ("slacking", "🎮", "サボり中", Color.indigo),
-                    ("boring", "😩", "面倒", Color.gray)
-                ]
-
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(buttons, id: \.0) { btn in
-                        Button(action: { viewModel.sendReaction(type: btn.0) }) {
-                            VStack(spacing: 6) {
-                                Text(btn.1).font(.system(size: 40))
-                                    .scaleEffect(viewModel.showReactionSuccess == btn.0 ? 1.5 : 1.0)
-                                    .animation(.spring(), value: viewModel.showReactionSuccess)
-                                Text(btn.2)
-                                    .font(.headline).bold().foregroundColor(.white)
-                                    .multilineTextAlignment(.center).minimumScaleFactor(0.8)
+        GeometryReader { geo in
+            ScrollView {
+                VStack(spacing: 0) {
+                    VStack {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(viewModel.currentCourseTitle.isEmpty ? "教室" : viewModel.currentCourseTitle)
+                                    .font(.headline).bold().foregroundColor(.primary)
+                                Text(viewModel.myTeam == .red ? "RED TEAM" : "BLUE TEAM")
+                                    .font(.caption).bold()
+                                    .padding(.horizontal, 10).padding(.vertical, 4)
+                                    .background(viewModel.myTeam == .red ? Color.red.opacity(0.18) : Color.blue.opacity(0.18))
+                                    .cornerRadius(10)
+                                    .foregroundColor(viewModel.myTeam == .red ? .red : .blue)
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .background(btn.3)
-                            .cornerRadius(16)
-                            .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 3)
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.5), lineWidth: 1))
+                            Spacer()
+                            Button("退室") { showLeaveAlert = true }
+                                .font(.subheadline).bold()
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                                .background(Color.white.opacity(0.85))
+                                .cornerRadius(10)
                         }
-                    }
-                }
-                .padding(.horizontal, 22)
-                .padding(.bottom, 30)
-            }
-            .frame(maxWidth: .infinity)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: -2)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+                        .padding(.horizontal)
 
-            LinearGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.0), Color.white.opacity(0.6), Color.white]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 18)
+                        MochiPetView(mood: viewModel.currentPetMood)
+                            .frame(height: min(180, geo.size.height * 0.28))
+                            .padding(.vertical, 12)
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                    .background(teamGradientBackground)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("リアクション")
+                            .font(.headline)
+                            .foregroundColor(Color.gray)
+                            .padding(.horizontal, 22)
+                            .padding(.top, 20)
+
+                        let buttons: [(String, String, String, Color, Color, Color)] = [
+                            ("understood", "⭕️", "よくわかった",
+                             Color(red: 220/255, green: 252/255, blue: 231/255),
+                             Color(red: 22/255, green: 101/255, blue: 52/255),
+                             Color(red: 134/255, green: 239/255, blue: 172/255)),
+                            ("difficult", "🤯", "難しい",
+                             Color(red: 254/255, green: 226/255, blue: 226/255),
+                             Color(red: 153/255, green: 27/255, blue: 27/255),
+                             Color(red: 252/255, green: 165/255, blue: 165/255)),
+                            ("lost", "🌀", "ぜんぜん\nわからない",
+                             Color(red: 219/255, green: 234/255, blue: 254/255),
+                             Color(red: 30/255, green: 64/255, blue: 175/255),
+                             Color(red: 147/255, green: 197/255, blue: 253/255)),
+                            ("unclear", "🤔", "ちょっと\nわからない",
+                             Color(red: 243/255, green: 244/255, blue: 246/255),
+                             Color(red: 75/255, green: 85/255, blue: 99/255),
+                             Color(red: 209/255, green: 213/255, blue: 219/255)),
+                            ("slacking", "🎮", "サボり中",
+                             Color(red: 224/255, green: 231/255, blue: 255/255),
+                             Color(red: 30/255, green: 58/255, blue: 138/255),
+                             Color(red: 165/255, green: 180/255, blue: 252/255)),
+                            ("boring", "😩", "面倒",
+                             Color(red: 229/255, green: 231/255, blue: 235/255),
+                             Color(red: 55/255, green: 65/255, blue: 81/255),
+                             Color(red: 209/255, green: 213/255, blue: 219/255))
+                        ]
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            ForEach(buttons, id: \.0) { btn in
+                                Button(action: { viewModel.sendReaction(type: btn.0) }) {
+                                    VStack(spacing: 6) {
+                                        Text(btn.1).font(.system(size: 24, weight: .regular, design: .rounded))
+                                            .scaleEffect(viewModel.showReactionSuccess == btn.0 ? 1.5 : 1.0)
+                                            .animation(.spring(), value: viewModel.showReactionSuccess)
+                                        Text(btn.2)
+                                            .font(.headline).bold().foregroundColor(btn.4)
+                                            .multilineTextAlignment(.center).minimumScaleFactor(0.8)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 100)
+                                    .background(btn.3)
+                                    .cornerRadius(16)
+                                    .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 3)
+                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(btn.5, lineWidth: 1))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, 24)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: -2)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.white.opacity(0.0), Color.white.opacity(0.6), Color.white]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 18)
+                }
+                .frame(minHeight: geo.size.height)
+            }
+            .background(teamGradientBackground.ignoresSafeArea())
         }
-        .background(teamGradientBackground.ignoresSafeArea())
     }
 
     private func joinClass() {

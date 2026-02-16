@@ -114,7 +114,6 @@
                             <p class="text-sm text-slate-500 font-medium mb-1">担当コース数</p>
                             <div class="flex items-baseline gap-2">
                                 <span class="text-3xl font-bold text-slate-800" id="stat-course-count">-</span>
-                                <span class="text-xs text-green-500 font-medium bg-green-50 px-2 py-0.5 rounded-full"><i class="fas fa-arrow-up text-[10px] mr-1"></i>Active</span>
                             </div>
                         </div>
                         <div class="absolute bottom-6 right-6 text-blue-500 text-2xl opacity-20"><i class="fas fa-layer-group"></i></div>
