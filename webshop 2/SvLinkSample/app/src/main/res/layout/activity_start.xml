@@ -1,0 +1,51 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/bg">
+
+    <ImageView
+        android:id="@+id/imgLogo"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:adjustViewBounds="true"
+        android:scaleType="centerInside"
+        android:src="@drawable/logo"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/txtSlogan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="やさしい学び、しっかり成長"
+        style="@style/TextSlogan"
+        android:gravity="center"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/txtAppTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="日電通販サイト"
+        style="@style/TextAppTitle"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnStartApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="カテゴリ一覧"
+        android:backgroundTint="@color/primary"
+        android:textColor="@color/white"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnAllGoods"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="商品一覧"
+        android:backgroundTint="@color/primary_dark"
+        android:textColor="@color/white" />
+</LinearLayout>

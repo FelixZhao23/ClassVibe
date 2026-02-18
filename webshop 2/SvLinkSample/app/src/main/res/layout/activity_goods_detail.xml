@@ -1,0 +1,111 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/btnBackGoods"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="戻る"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/white" />
+
+        <ImageView
+            android:id="@+id/imgDetail"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:scaleType="centerCrop"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="6dp"
+            android:src="@drawable/default_product" />
+
+        <TextView
+            android:id="@+id/txtDetailName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="商品名"
+            style="@style/TextSectionTitle"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/txtDetailPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="¥0"
+            style="@style/TextBody"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/txtDetailCost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="仕入れ値: ¥0"
+            style="@style/TextCaption"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/txtDetailStock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="在庫: 0"
+            style="@style/TextCaption"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/txtDetailCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="カテゴリ: "
+            style="@style/TextCaption"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/txtDetailMaker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="メーカー: "
+            style="@style/TextCaption"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/txtDetailDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="説明"
+            style="@style/TextCaption"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <EditText
+                android:id="@+id/edtStock"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="number"
+                android:hint="在庫数"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text_sub" />
+
+            <Button
+                android:id="@+id/btnUpdateStock"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="在庫更新"
+                android:backgroundTint="@color/primary"
+                android:textColor="@color/white" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -413,6 +413,21 @@
         let mascotPrevSnapshot = null;
         let mascotInitialized = false;
 
+        function nowJstString() {
+            return new Date().toLocaleString('sv-SE', {
+                timeZone: 'Asia/Tokyo',
+                hour12: false
+            }).replace('T', ' ');
+        }
+
+        function toJstString(msOrDate) {
+            const d = (msOrDate instanceof Date) ? msOrDate : new Date(msOrDate);
+            return d.toLocaleString('sv-SE', {
+                timeZone: 'Asia/Tokyo',
+                hour12: false
+            }).replace('T', ' ');
+        }
+
         // 2. Firebase Listener
         courseRef.on('value', (snapshot) => {
             const data = snapshot.val();
@@ -430,7 +445,7 @@
                 generateQR(code);
                 
                 if (!sessionStartTime) {
-                    sessionStartTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                sessionStartTime = nowJstString();
                 }
                 
                 const active = data.active_students || {};
@@ -711,7 +726,7 @@
         async function stopRealReaction() {
             if (!realReactionActive) return;
 
-            const endTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                const endTime = nowJstString();
             const duration = Math.floor((Date.now() - realReactionStartTime) / 1000);
 
             // 保存到历史记录
@@ -722,7 +737,7 @@
                 class_id: COURSE_ID,
                 class_name: courseInfo?.title || '未設定',
                 topic: '📊 リアルリアクション投票',
-                start_time: new Date(realReactionStartTime).toISOString().slice(0, 19).replace('T', ' '),
+                start_time: toJstString(realReactionStartTime),
                 end_time: endTime,
                 duration: duration,
                 student_count: studentCount,
@@ -1100,7 +1115,7 @@
                 await stopRealReaction();
             }
 
-            const endTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const endTime = nowJstString();
             const battleWinner = battleState.red === battleState.blue
                 ? 'draw'
                 : (battleState.red > battleState.blue ? 'red' : 'blue');

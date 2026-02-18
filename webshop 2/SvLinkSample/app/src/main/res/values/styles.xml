@@ -1,0 +1,37 @@
+<resources>
+    <style name="TextAppTitle">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:letterSpacing">0.06</item>
+    </style>
+
+    <style name="TextSlogan">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/text_sub</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <style name="TextSectionTitle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <style name="TextBody">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text</item>
+    </style>
+
+    <style name="TextCaption">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_sub</item>
+    </style>
+
+    <style name="TextAction">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/primary</item>
+    </style>
+</resources>
